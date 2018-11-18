@@ -1,0 +1,12 @@
+<app-card title="Problem">
+  <p [innerHtml]="problem.description"></p>
+</app-card>
+<div class="flex display-side">
+  <input type="file" multiple (change)="handleFiles($event.target.files)">
+  <button mat-raised-button color="accent" [matMenuTriggerFor]="menu" class="menu-button">Documentation</button>
+</div>
+<mat-menu #menu="matMenu" [overlapTrigger]="false">
+  <a mat-menu-item [href]="getDocumentation('java')" target="_blank">Java</a>
+  <a mat-menu-item [href]="getDocumentation('python')" target="_blank">Python 3</a>
+  <a mat-menu-item [href]="getDocumentation('cpp')" target="_blank">C++</a>
+</mat-menu>

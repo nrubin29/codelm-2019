@@ -1,0 +1,24 @@
+<mat-sidenav-container>
+    <mat-sidenav mode="side" [opened]="true" [disableClose]="true" [fixedInViewport]="true">
+        <a [routerLink]="['/admin']" class="logo"><img src="assets/logo-portrait.png"></a>
+        <br><br>
+        <h2 *ngIf="admin">{{admin.name}}</h2>
+        <h3>Judging Dashboard</h3>
+        <h4>For official use only</h4>
+        <br><br>
+        <mat-divider></mat-divider>
+        <br>
+        <mat-nav-list *ngIf="admin">
+            <a [routerLink]="['/admin']" mat-list-item>Standings</a>
+            <a [routerLink]="['/admin', 'settings']" mat-list-item *ngIf="admin.superUser">Settings</a>
+            <a [routerLink]="['/admin', 'disputes']" mat-list-item>Disputes</a>
+            <a [routerLink]="['/admin', 'divisions']" mat-list-item *ngIf="admin.superUser">Divisions</a>
+            <a [routerLink]="['/admin', 'problems']" mat-list-item *ngIf="admin.superUser">Problems</a>
+            <a [routerLink]="['/admin', 'admins']" mat-list-item *ngIf="admin.superUser">Admins</a>
+            <a [routerLink]="['/admin', 'add-team']" mat-list-item>Add Team</a>
+        </mat-nav-list>
+    </mat-sidenav>
+    <mat-sidenav-content>
+        <router-outlet></router-outlet>
+    </mat-sidenav-content>
+</mat-sidenav-container>

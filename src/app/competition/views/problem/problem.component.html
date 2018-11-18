@@ -1,0 +1,24 @@
+<mat-toolbar color="primary">
+  <mat-toolbar-row>
+    <span>{{problemNumber}}. {{problem.title}}</span>
+      <mat-chip-list>
+          <mat-chip color="accent" selected="true">{{problemPoints}} {{'WaveCoin'|pluralize:problemPoints}}</mat-chip>
+      </mat-chip-list>
+    <span class="spacer"></span>
+      <button type="button" *ngIf="enableTest" (click)="submitClicked(true)" mat-raised-button color="accent">Test
+      </button>
+    <button type="button" (click)="submitClicked(false)" mat-raised-button color="accent">Submit</button>
+  </mat-toolbar-row>
+</mat-toolbar>
+<div class="container">
+    <app-graded-problem *ngIf="isGradedProblem" [problem]="problem"></app-graded-problem>
+    <app-upload-problem *ngIf="!isGradedProblem" [problem]="problem"></app-upload-problem>
+  <br>
+  <app-card title="Submissions" [pad]="false" *ngIf="submissions.length > 0">
+    <mat-list>
+      <mat-list-item *ngFor="let submission of submissions; let i = index"><a
+          [routerLink]="['/', 'dashboard', 'submission', submission._id]">Submission {{i + 1}}{{submission.test ? '
+        (Test)' : ''}}</a></mat-list-item>
+    </mat-list>
+  </app-card>
+</div>
