@@ -7,6 +7,7 @@ import { RestService } from './rest.service';
 import { AdminService } from './admin.service';
 import { RegisterPacket, RegisterTeamData } from '../../../../common/src/packets/register.packet';
 import { VERSION } from '../../../../common/version';
+import {Packet} from "../../../../common/src/packets/packet";
 
 @Injectable({
   providedIn: 'root'
@@ -15,63 +16,37 @@ export class AuthService {
   constructor(private socketService: SocketService, private restService: RestService, private teamService: TeamService, private adminService: AdminService) {}
 
   login(username: string, password: string): Promise<LoginResponse> {
-    return new Promise<LoginResponse>((resolve, reject) => {
-      this.socketService.connect().then(() => {
-        let sub = this.socketService.stream.subscribe(packet => {
-          if (packet.name == 'loginResponse') {
-            const loginResponsePacket = packet as LoginResponsePacket;
-
-            sub.unsubscribe();
-
-            if (loginResponsePacket.response === LoginResponse.SuccessTeam) {
-              this.teamService.team.next(loginResponsePacket.team);
-              this.restService.authId = loginResponsePacket.team._id;
-              this.socketService.listenOnDisconnect();
-              resolve(LoginResponse.SuccessTeam);
-            }
-
-            else if (loginResponsePacket.response === LoginResponse.SuccessAdmin) {
-              this.adminService.admin.next(loginResponsePacket.admin);
-              this.restService.authId = loginResponsePacket.admin._id;
-              this.socketService.listenOnDisconnect();
-              resolve(LoginResponse.SuccessAdmin);
-            }
-
-            else {
-              reject(loginResponsePacket.response);
-            }
-          }
-        });
-
-        this.socketService.emit(new LoginPacket(username, password, VERSION));
-      }).catch(reject);
-    });
+    return this.connect(new LoginPacket(username, password, VERSION));
   }
 
-  // TODO: Consolidate this code with login().
   register(teamData: RegisterTeamData): Promise<LoginResponse> {
+    return this.connect(new RegisterPacket(teamData, VERSION));
+  }
+
+  private connect(packet: Packet) {
     return new Promise<LoginResponse>((resolve, reject) => {
       this.socketService.connect().then(() => {
-        let sub = this.socketService.stream.subscribe(packet => {
-          if (packet.name == 'loginResponse') {
-            const loginResponsePacket = packet as LoginResponsePacket;
+        this.socketService.once<LoginResponsePacket>('loginResponse', packet => {
+          if (packet.response === LoginResponse.SuccessTeam) {
+            this.teamService.team.next(packet.team);
+            this.restService.authId = packet.team._id;
+            this.socketService.listenOnDisconnect();
+            resolve(LoginResponse.SuccessTeam);
+          }
 
-            sub.unsubscribe();
+          else if (packet.response === LoginResponse.SuccessAdmin) {
+            this.adminService.admin.next(packet.admin);
+            this.restService.authId = packet.admin._id;
+            this.socketService.listenOnDisconnect();
+            resolve(LoginResponse.SuccessAdmin);
+          }
 
-            if (loginResponsePacket.response === LoginResponse.SuccessTeam) {
-              this.teamService.team.next(loginResponsePacket.team);
-              this.restService.authId = loginResponsePacket.team._id;
-              this.socketService.listenOnDisconnect();
-              resolve(LoginResponse.SuccessTeam);
-            }
-
-            else {
-              reject(loginResponsePacket.response);
-            }
+          else {
+            reject(packet.response);
           }
         });
 
-        this.socketService.emit(new RegisterPacket(teamData, VERSION));
+        this.socketService.emit(packet);
       }).catch(reject);
     });
   }

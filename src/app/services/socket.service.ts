@@ -10,7 +10,6 @@ import { Packet } from '../../../../common/src/packets/packet';
 })
 export class SocketService {
   private socket: SocketIOClient.Socket;
-  stream: Observable<Packet>;
 
   constructor(private router: Router) {}
 
@@ -19,17 +18,21 @@ export class SocketService {
 
     return new Promise<void>((resolve, reject) => {
       this.socket.on('connect', () => {
-        this.stream = new Observable<Packet>(observer => {
-          this.socket.on('packet', packet => {
-            observer.next(packet)
-          });
-          // return () => {
-          //     this.socket.off('packet');
-          // }
-        });
         resolve();
       });
     });
+  }
+
+  on<T extends Packet>(event: string, fn: (packet: T) => void) {
+    this.socket.on(event, fn);
+  }
+
+  once<T extends Packet>(event: string, fn: (packet: T) => void) {
+    this.socket.once(event, fn);
+  }
+
+  off(event: string) {
+    this.socket.off(event);
   }
 
   listenOnDisconnect() {
@@ -48,6 +51,6 @@ export class SocketService {
       throw new Error('Socket is not connected!');
     }
 
-    this.socket.emit('packet', packet);
+    this.socket.emit(packet.name, packet);
   }
 }

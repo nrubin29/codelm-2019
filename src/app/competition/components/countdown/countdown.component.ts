@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { SettingsService } from '../../../services/settings.service';
 import { SocketService } from '../../../services/socket.service';
 import { SettingsModel, SettingsState } from '../../../../../../common/src/models/settings.model';
-import { isStateSwitchPacket } from '../../../../../../common/src/packets/state.switch.packet';
+import {StateSwitchPacket} from '../../../../../../common/src/packets/state.switch.packet';
 
 @Component({
   selector: 'app-countdown',
@@ -22,23 +22,21 @@ export class CountdownComponent implements OnInit {
   constructor(private socketService: SocketService, private settingsService: SettingsService, private router: Router) { }
 
   ngOnInit() {
-    this.socketService.stream.subscribe(packet => {
-      if (packet.name === 'updateSettings') {
-        this.settingsService.getSettings().then(settings => {
-          this.settings = settings;
-          this.setup();
-        });
-      }
+    this.socketService.on('updateSettings', () => {
+      this.settingsService.getSettings().then(settings => {
+        this.settings = settings;
+        this.setup();
+      });
+    });
 
-      else if (isStateSwitchPacket(packet)) {
-        switch (packet.newState) {
-          case SettingsState.End:
-            this.router.navigate(['/end']);
-            break;
-          case SettingsState.Closed:
-            this.router.navigate(['/login']);
-            break;
-        }
+    this.socketService.on<StateSwitchPacket>('stateSwitch', packet => {
+      switch (packet.newState) {
+        case SettingsState.End:
+          this.router.navigate(['/end']);
+          break;
+        case SettingsState.Closed:
+          this.router.navigate(['/login']);
+          break;
       }
     });
 

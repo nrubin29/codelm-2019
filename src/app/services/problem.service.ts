@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { RestService } from './rest.service';
 import { ProblemModel } from '../../../../common/src/models/problem.model';
 import { TestCaseSubmissionModel } from '../../../../common/src/models/submission.model';
-import { ClientProblemSubmission, isUploadProblemSubmission } from '../../../../common/src/problem-submission';
+import { ClientProblemSubmission } from '../../../../common/src/problem-submission';
+import {SocketService} from "./socket.service";
 
 @Injectable({
   providedIn: 'root'
@@ -35,24 +36,6 @@ export class ProblemService {
 
   getProblems(divisionId: string): Promise<ProblemModel[]> {
     return this.restService.get<ProblemModel[]>(`${this.endpoint}/division/${divisionId}`);
-  }
-
-  submit(problemSubmission: ClientProblemSubmission): Promise<TestCaseSubmissionModel[]> {
-    const formData = new FormData();
-
-    if (isUploadProblemSubmission(problemSubmission)) {
-      for (let i = 0; i < problemSubmission.files.length; i++) {
-        formData.append('files', problemSubmission.files[i], problemSubmission.files[i].name);
-      }
-
-      delete problemSubmission.files;
-    }
-
-    for (const key of Object.keys(problemSubmission)) {
-      formData.append(key, problemSubmission[key]);
-    }
-
-    return this.restService.post<TestCaseSubmissionModel[]>(`${this.endpoint}/submit`, formData);
   }
 
   addOrUpdateProblem(problem: any): Promise<ProblemModel> {

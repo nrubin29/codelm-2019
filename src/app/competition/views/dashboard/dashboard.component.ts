@@ -25,11 +25,7 @@ export class DashboardComponent implements OnInit {
   constructor(private problemService: ProblemService, private teamService: TeamService, private submissionService: SubmissionService, private socketService: SocketService) { }
 
   ngOnInit() {
-    this.socketService.stream.subscribe((packet: Packet) => {
-      if (packet.name === 'updateTeam') {
-        this.teamService.refreshTeam();
-      }
-    });
+    this.socketService.on('updateTeam', () => this.teamService.refreshTeam());
 
     this.teamService.team.subscribe(team => {
       this.team = team;

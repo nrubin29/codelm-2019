@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChildren} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { isGradedProblem, ProblemModel } from '../../../../../../common/src/models/problem.model';
 import { ProblemService } from '../../../services/problem.service';
@@ -8,13 +8,16 @@ import { TeamModel } from '../../../../../../common/src/models/team.model';
 import { CodeSaverService } from '../../../services/code-saver.service';
 import { ProblemUtil } from '../../../../../../common/src/utils/problem.util';
 import { Subject } from 'rxjs';
+import {CodeMirrorComponent} from "../../../common/components/code-mirror/code-mirror.component";
+import {ClientProblemSubmission} from "../../../../../../common/src/problem-submission";
+import {debounceTime} from "rxjs/operators";
 
 @Component({
   selector: 'app-problem',
   templateUrl: './problem.component.html',
   styleUrls: ['./problem.component.scss']
 })
-export class ProblemComponent implements OnInit {
+export class ProblemComponent implements OnInit, AfterViewInit, OnDestroy {
   team: TeamModel;
   problem: ProblemModel;
   submissions: SubmissionModel[] = [];
@@ -22,14 +25,12 @@ export class ProblemComponent implements OnInit {
   problemNumber: number;
   problemPoints: number;
 
-  enableTest = true;
-  buttonClicked: Subject<boolean>;
+  @ViewChildren(CodeMirrorComponent) codeMirrors: QueryList<CodeMirrorComponent>;
+  language: string;
 
   constructor(private problemService: ProblemService, private teamService: TeamService, private codeSaverService: CodeSaverService, private router: Router, private activatedRoute: ActivatedRoute) {}
 
   ngOnInit() {
-    this.buttonClicked = new Subject<boolean>();
-
     this.teamService.team.subscribe(team => this.team = team);
 
     this.activatedRoute.data.subscribe(data => {
@@ -38,13 +39,47 @@ export class ProblemComponent implements OnInit {
       this.problemNumber = ProblemUtil.getProblemNumberForTeam(this.problem, this.team);
       this.problemPoints = ProblemUtil.getPoints(this.problem, this.team);
     });
+
+    this.language = this.codeSaverService.getLanguage();
+  }
+
+  ngAfterViewInit() {
+    this.subscribeTo(this.codeMirrors.first);
+
+    this.codeMirrors.changes.subscribe((codeMirrors: QueryList<CodeMirrorComponent>) => {
+      codeMirrors.forEach(cm => this.subscribeTo(cm));
+    });
+  }
+
+  private subscribeTo(codeMirror: CodeMirrorComponent) {
+    codeMirror.writeValue(this.codeSaverService.get(this.problem._id, codeMirror.config.mode));
+    codeMirror.change.pipe(debounceTime(5000)).subscribe(() => {
+      this.saveCode();
+    });
+  }
+
+  ngOnDestroy() {
+    this.saveCode();
+  }
+
+  saveCode() {
+    this.codeSaverService.save(this.problem._id, this.codeMirrors.first.config.mode, this.codeMirrors.first.value);
+  }
+
+  get documentation() {
+    return this.codeSaverService.getDocumentation();
   }
 
   submitClicked(test: boolean) {
-    this.buttonClicked.next(test);
-  }
+    this.saveCode();
 
-  get isGradedProblem() {
-    return isGradedProblem(this.problem);
+    this.problemService.problemSubmission = {
+      problemId: this.problem._id,
+      language: this.language,
+      code: this.codeMirrors.first.value,
+      test: test
+    } as ClientProblemSubmission;
+
+    this.router.navigate(['dashboard', 'submit']);
   }
 }

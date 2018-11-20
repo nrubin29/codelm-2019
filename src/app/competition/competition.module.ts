@@ -5,8 +5,6 @@ import { ProblemComponent } from './views/problem/problem.component';
 import { StandingsComponent } from './views/standings/standings.component';
 import { SubmitComponent } from './views/submit/submit.component';
 import { SharedModule } from '../shared.module';
-import { GradedProblemComponent } from './views/graded-problem/graded-problem.component';
-import { UploadProblemComponent } from './views/upload-problem/upload-problem.component';
 import { CompetitionRoutingModule } from './competition.routing';
 
 @NgModule({
@@ -15,9 +13,7 @@ import { CompetitionRoutingModule } from './competition.routing';
     DashboardComponent,
     ProblemComponent,
     StandingsComponent,
-    SubmitComponent,
-    GradedProblemComponent,
-    UploadProblemComponent
+    SubmitComponent
   ],
   imports: [
     SharedModule,
