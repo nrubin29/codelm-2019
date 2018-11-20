@@ -1,17 +1,19 @@
-import fs = require('fs-extra');
-import { execFile } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import { TestCaseModel } from '../../common/src/models/problem.model';
 import { TestCaseSubmissionModel } from '../../common/src/models/submission.model';
 import { Subject } from 'rxjs';
-
-// This interface is used internally by runProcess().
-interface ProcessRunResult {
-  output: string;
-  error: string;
-}
+import Game from "./games/game";
+import {Language} from "./language";
+import {CodeFile} from "./codefile";
+import * as fs from "fs-extra";
 
 interface RunResult {
   output: string;
+}
+
+interface ProcessRunResult {
+  output: string;
+  error: string;
 }
 
 export type TestCaseRunResult = TestCaseSubmissionModel & RunResult;
@@ -22,68 +24,20 @@ export interface RunError {
   error: string;
 }
 
-export class CodeFile {
-  constructor(public name: string, public code: string) { }
+export class CodeRunner {
+  public output: Subject<object>;
 
-  static async fromFile(name: string, path: string): Promise<CodeFile> {
-    const data = await fs.readFile(path);
-    return new CodeFile(name, data.toString());
-  }
+  constructor(private language: Language, public folder: string, public files: CodeFile[]) {
+    this.output = new Subject<object>();
 
-  mkfile(folderPath: string): Promise<void> {
-    return fs.writeFile(folderPath + '/' + this.name, this.code);
-  }
-}
-
-export abstract class CodeRunner {
-  public subject: Subject<string | TestCaseRunResult>;
-
-  constructor(public folder: string, public files: CodeFile[]) {
-    this.subject = new Subject<string>();
+    this.files.concat(this.language.files || []);
   }
 
   protected before() {
 
   }
 
-  protected async runProc(cmd: string, args: string[]): Promise<RunResult> {
-    const {output, error} = await this.runProcess(cmd, args);
-
-    if (error.length > 0) {
-      throw {
-        stage: 'compile',
-        error: error
-      };
-    }
-
-    else {
-      return {
-        output: output,
-      };
-    }
-  }
-
-  protected async runTestCaseProc(cmd: string, args: string[], testCase: TestCaseModel): Promise<TestCaseRunResult> {
-    const {output, error} = await this.runProcess(cmd, args, testCase.input);
-
-    if (error.length > 0) {
-      throw {
-        stage: 'run',
-        error: error
-      };
-    }
-
-    else {
-      return {
-        hidden: testCase.hidden,
-        input: testCase.input,
-        output: output,
-        correctOutput: testCase.output
-      };
-    }
-  }
-
-  private runProcess(cmd: string, args: string[], input?: string): Promise<ProcessRunResult> {
+  private runProcessSync(cmd: string, args: string[], input?: string): Promise<ProcessRunResult> {
     return new Promise<ProcessRunResult>((resolve, reject) => {
       try {
         const process = execFile(cmd, args, { cwd: this.folder, timeout: 5000 }, (err: Error & {signal: string}, stdout, stderr) => {
@@ -108,7 +62,73 @@ export abstract class CodeRunner {
     });
   }
 
-  async run(testCases: TestCaseModel[]): Promise<TestCaseSubmissionModel[]> {
+  protected runProcessAsync(cmd: string, args: ReadonlyArray<string>, game: Game): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        const process = spawn(cmd, args);
+        process.stdout.on('data', data => {
+          this.output.next({output: data});
+          const result = game.onInput(data);
+          this.output.next({input: result});
+
+          if (typeof result === 'string') {
+            process.stdin.write(result);
+          }
+
+          else {
+            resolve();
+          }
+        });
+      }
+
+      catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  protected async compile(): Promise<RunResult> {
+    const compileCmd = this.language.compile(this.files.map(file => file.name));
+
+    const {output, error} = await this.runProcessSync(compileCmd[0], compileCmd.slice(1));
+
+    if (error.length > 0) {
+      throw {
+        stage: 'compile',
+        error: error
+      };
+    }
+
+    else {
+      return {
+        output: output
+      };
+    }
+  }
+
+  protected async runTestCase(testCase: TestCaseModel): Promise<TestCaseRunResult> {
+    const runCmd = this.language.run(this.files.map(file => file.name));
+
+    const {output, error} = await this.runProcessSync(runCmd[0], runCmd.slice(1), testCase.input);
+
+    if (error.length > 0) {
+      throw {
+        stage: 'run',
+        error: error
+      };
+    }
+
+    else {
+      return {
+        hidden: testCase.hidden,
+        input: testCase.input,
+        output: output,
+        correctOutput: testCase.output
+      };
+    }
+  }
+
+  async setup() {
     try {
       this.before();
 
@@ -120,62 +140,47 @@ export abstract class CodeRunner {
 
       await Promise.all(this.files.map(file => file.mkfile(this.folder)));
 
-      this.subject.next('compiling');
+      this.output.next({status: 'compiling'});
       await this.compile();
 
-      this.subject.next('running');
+      this.output.next({status: 'compiling'});
+    }
 
-      const results: TestCaseRunResult[] = [];
+    catch {
+      await this.cleanUp();
+    }
+  }
+
+  async run(testCases: TestCaseModel[]): Promise<void> {
+    try {
+      this.output.next({status: 'running'});
+
       for (let testCase of testCases) {
         const result = await this.runTestCase(testCase);
-        results.push(result);
-        this.subject.next(result);
+        this.output.next({testCase: result});
       }
-
-      this.subject.next('cleaning up');
-
-      return Promise.resolve(results);
     }
 
     finally {
-      await fs.remove(this.folder);
+      await this.cleanUp();
     }
   }
 
-  protected abstract compile(): Promise<RunResult>;
-  protected abstract runTestCase(testCase: TestCaseModel): Promise<TestCaseRunResult>;
-}
+  async runGame(game: Game): Promise<void> {
+    const runCmd = this.language.run(this.files.map(file => file.name));
 
-export class JavaRunner extends CodeRunner {
-  compile() {
-    return this.runProc('javac', this.files.map(file => file.name));
+    try {
+      this.output.next({status: 'running'});
+      await this.runProcessAsync(runCmd[0], runCmd.slice(1), game);
+    }
+
+    finally {
+      await this.cleanUp();
+    }
   }
 
-  runTestCase(testCase: TestCaseModel) {
-    return this.runTestCaseProc('java', [this.files[0].name.substring(0, this.files[0].name.length - 5)], testCase);
-  }
-}
-
-export class PythonRunner extends CodeRunner {
-  before() {
-    this.files.push(new CodeFile('__init__.py', ''));
-  }
-
-  compile() {
-    return this.runProc('python3', ['-m', 'py_compile'].concat(this.files.map(file => file.name)));
-  }
-
-  runTestCase(testCase: TestCaseModel) {
-    return this.runTestCaseProc('python3', [this.files[0].name], testCase);
-  }
-}
-
-export class CppRunner extends CodeRunner {
-  compile() {
-    return this.runProc('g++', this.files.map(file => file.name));
-  }
-
-  runTestCase(testCase: TestCaseModel) {
-    return this.runTestCaseProc('./a.out', [], testCase);
+  async cleanUp() {
+    this.output.next({status: 'cleaning up'});
+    await fs.remove(this.folder);
   }
 }

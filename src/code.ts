@@ -1,31 +1,39 @@
-import { CodeFile, CodeRunner, CppRunner, JavaRunner, PythonRunner } from './coderunner';
-import { ServerGradedProblemSubmission } from '../../common/src/problem-submission';
+import {CodeRunner} from './coderunner';
+import {ServerProblemSubmission} from '../../common/src/problem-submission';
+import {ProblemType} from "../../common/src/models/problem.model";
+import {Game} from "../../common/src/models/game.model";
+import {HighLow} from "./games/high-low";
+import {languages} from "./language";
+import {CodeFile} from "./codefile";
 
 const stdin = process.openStdin();
-stdin.once('data', data => {
-  const submission = JSON.parse(data) as ServerGradedProblemSubmission;
-  let runner: CodeRunner;
+stdin.once('data', async data => {
+  const submission = JSON.parse(data) as ServerProblemSubmission;
+  const language = languages[submission.language];
 
-  switch (submission.language) {
-    case 'python': {
-      runner = new PythonRunner('code', [new CodeFile('main.py', submission.code)]);
-      break;
+  let runner = new CodeRunner(language, 'code', [new CodeFile(submission.problemTitle.replace(' ', '') + '.' + language.extension, submission.code)]);
+
+  await runner.setup();
+
+  runner.output.subscribe(next => console.log(JSON.stringify(next)));
+
+  try {
+    if (submission.type === ProblemType.OpenEnded) {
+      if (submission.game === Game.HighLow) {
+        await runner.runGame(new HighLow());
+      }
+
+      else {
+        console.error(JSON.stringify({error: 'Invalid game ' + submission.game}));
+      }
     }
 
-    case 'java': {
-      runner = new JavaRunner('code', [new CodeFile(submission.problemTitle.split(' ').join('') + '.java', submission.code)]);
-      break;
-    }
-
-    case 'cpp': {
-      runner = new CppRunner('code', [new CodeFile('main.cpp', submission.code)]);
-      break;
-    }
-
-    default: {
-      throw new Error(`Invalid language ${submission.language}`);
+    else {
+      await runner.run(submission.testCases);
     }
   }
 
-  runner.run(submission.testCases).then(data => console.log(JSON.stringify(data))).catch(error => console.error(JSON.stringify(error)));
+  catch (e) {
+    console.error(JSON.stringify(e));
+  }
 });
