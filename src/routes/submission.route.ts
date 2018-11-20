@@ -42,32 +42,32 @@ router.get('/:id', PermissionsUtil.requireAuth, async (req: Request, res: Respon
 });
 
 // TODO: Protect this route.
-router.get('/:id/file/:fileName', async (req: Request, res: Response) => {
-  const submission: SubmissionModel = await SubmissionDao.getSubmission(req.params.id);
-
-  if (isUploadSubmission(submission)) {
-    const file = submission.files.find(f => f.name === req.params.fileName);
-
-    if (file) {
-      // TODO: Set Content-Type appropriately (because Safari appends .txt, but at least Chrome works).
-      res.set({
-        'Content-Disposition': `attachment; filename="${file.name}"`,
-        'Content-Type': 'text/plain',
-        'Content-Length': file.contents.length
-      });
-
-      res.send(file.contents);
-    }
-
-    else {
-      res.sendStatus(403);
-    }
-  }
-
-  else {
-    res.sendStatus(403);
-  }
-});
+// router.get('/:id/file/:fileName', async (req: Request, res: Response) => {
+//   const submission: SubmissionModel = await SubmissionDao.getSubmission(req.params.id);
+//
+//   if (isUploadSubmission(submission)) {
+//     const file = submission.files.find(f => f.name === req.params.fileName);
+//
+//     if (file) {
+//       // TODO: Set Content-Type appropriately (because Safari appends .txt, but at least Chrome works).
+//       res.set({
+//         'Content-Disposition': `attachment; filename="${file.name}"`,
+//         'Content-Type': 'text/plain',
+//         'Content-Length': file.contents.length
+//       });
+//
+//       res.send(file.contents);
+//     }
+//
+//     else {
+//       res.sendStatus(403);
+//     }
+//   }
+//
+//   else {
+//     res.sendStatus(403);
+//   }
+// });
 
 router.put('/:id', PermissionsUtil.requireAuth, async (req: Request, res: Response) => {
   if (req.params.team) {
