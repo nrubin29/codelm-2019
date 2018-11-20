@@ -6,7 +6,3 @@ export class StateSwitchPacket extends Packet {
     super('stateSwitch');
   }
 }
-
-export function isStateSwitchPacket(packet: Packet): packet is StateSwitchPacket {
-  return packet.name === 'stateSwitch';
-}

@@ -22,7 +22,7 @@ export enum TestCaseOutputMode {
 
 export enum ProblemType {
   Graded = 'Graded',
-  Upload = 'Upload'
+  OpenEnded = 'OpenEnded'
 }
 
 export interface ProblemModel {
@@ -42,10 +42,10 @@ export function isGradedProblem(problem: ProblemModel): problem is GradedProblem
   return problem.type === ProblemType.Graded;
 }
 
-export interface UploadProblemModel extends ProblemModel {
+export interface OpenEndedProblemModel extends ProblemModel {
 
 }
 
-export function isUploadProblem(problem: ProblemModel): problem is UploadProblemModel {
-  return problem.type === ProblemType.Upload;
+export function isOpenEndedProblem(problem: ProblemModel): problem is OpenEndedProblemModel {
+  return problem.type === ProblemType.OpenEnded;
 }
