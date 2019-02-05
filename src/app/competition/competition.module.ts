@@ -6,6 +6,7 @@ import { StandingsComponent } from './views/standings/standings.component';
 import { SubmitComponent } from './views/submit/submit.component';
 import { SharedModule } from '../shared.module';
 import { CompetitionRoutingModule } from './competition.routing';
+import { HighlowComponent } from './views/highlow/highlow.component';
 
 @NgModule({
   declarations: [
@@ -13,7 +14,8 @@ import { CompetitionRoutingModule } from './competition.routing';
     DashboardComponent,
     ProblemComponent,
     StandingsComponent,
-    SubmitComponent
+    SubmitComponent,
+    HighlowComponent
   ],
   imports: [
     SharedModule,

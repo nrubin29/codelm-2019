@@ -16,6 +16,7 @@ import { FroalaEditorModule, FroalaViewModule } from 'angular-froala-wysiwyg';
 import { SharedModule } from '../shared.module';
 import { EditGradedProblemComponent } from './components/edit-graded-problem/edit-graded-problem.component';
 import { AdminRoutingModule } from './admin.routing';
+import { EditOpenEndedProblemComponent } from './components/edit-open-ended-problem/edit-open-ended-problem.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { AdminRoutingModule } from './admin.routing';
     ProblemsComponent,
     SettingsComponent,
     TeamComponent,
-    EditGradedProblemComponent
+    EditGradedProblemComponent,
+    EditOpenEndedProblemComponent
   ],
   imports: [
     SharedModule,

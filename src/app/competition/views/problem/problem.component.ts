@@ -1,13 +1,17 @@
 import {AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChildren} from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { isGradedProblem, ProblemModel } from '../../../../../../common/src/models/problem.model';
-import { ProblemService } from '../../../services/problem.service';
-import { SubmissionModel } from '../../../../../../common/src/models/submission.model';
-import { TeamService } from '../../../services/team.service';
-import { TeamModel } from '../../../../../../common/src/models/team.model';
-import { CodeSaverService } from '../../../services/code-saver.service';
-import { ProblemUtil } from '../../../../../../common/src/utils/problem.util';
-import { Subject } from 'rxjs';
+import {ActivatedRoute, Router} from '@angular/router';
+import {
+  isGradedProblem,
+  OpenEndedProblemModel,
+  ProblemModel,
+  ProblemType
+} from '../../../../../../common/src/models/problem.model';
+import {ProblemService} from '../../../services/problem.service';
+import {SubmissionModel} from '../../../../../../common/src/models/submission.model';
+import {TeamService} from '../../../services/team.service';
+import {TeamModel} from '../../../../../../common/src/models/team.model';
+import {CodeSaverService} from '../../../services/code-saver.service';
+import {ProblemUtil} from '../../../../../../common/src/utils/problem.util';
 import {CodeMirrorComponent} from "../../../common/components/code-mirror/code-mirror.component";
 import {ClientProblemSubmission} from "../../../../../../common/src/problem-submission";
 import {debounceTime} from "rxjs/operators";
@@ -80,6 +84,12 @@ export class ProblemComponent implements OnInit, AfterViewInit, OnDestroy {
       test: test
     } as ClientProblemSubmission;
 
-    this.router.navigate(['dashboard', 'submit']);
+    if (isGradedProblem(this.problem)) {
+      this.router.navigate(['dashboard', 'submit']);
+    }
+
+    else {
+      this.router.navigate(['dashboard', 'game', (<OpenEndedProblemModel>this.problem).game.toLowerCase().replace(' ', '')])
+    }
   }
 }

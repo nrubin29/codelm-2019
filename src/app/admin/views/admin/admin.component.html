@@ -9,13 +9,34 @@
         <mat-divider></mat-divider>
         <br>
         <mat-nav-list *ngIf="admin">
-            <a [routerLink]="['/admin']" mat-list-item>Standings</a>
-            <a [routerLink]="['/admin', 'settings']" mat-list-item *ngIf="admin.superUser">Settings</a>
-            <a [routerLink]="['/admin', 'disputes']" mat-list-item>Disputes</a>
-            <a [routerLink]="['/admin', 'divisions']" mat-list-item *ngIf="admin.superUser">Divisions</a>
-            <a [routerLink]="['/admin', 'problems']" mat-list-item *ngIf="admin.superUser">Problems</a>
-            <a [routerLink]="['/admin', 'admins']" mat-list-item *ngIf="admin.superUser">Admins</a>
-            <a [routerLink]="['/admin', 'add-team']" mat-list-item>Add Team</a>
+            <mat-list-item>
+                <mat-icon mat-list-icon>bar_chart</mat-icon>
+                <a mat-line [routerLink]="['/admin']">Standings</a>
+            </mat-list-item>
+            <mat-list-item *ngIf="admin.superUser">
+                <mat-icon mat-list-icon>settings</mat-icon>
+                <a mat-line [routerLink]="['/admin', 'settings']">Settings</a>
+            </mat-list-item>
+            <mat-list-item>
+                <mat-icon mat-list-icon>feedback</mat-icon>
+                <a mat-line [routerLink]="['/admin', 'disputes']">Disputes</a>
+            </mat-list-item>
+            <mat-list-item *ngIf="admin.superUser">
+                <mat-icon mat-list-icon>view_list</mat-icon>
+                <a mat-line [routerLink]="['/admin', 'divisions']">Divisions</a>
+            </mat-list-item>
+            <mat-list-item *ngIf="admin.superUser">
+                <mat-icon mat-list-icon>insert_drive_file</mat-icon>
+                <a mat-line [routerLink]="['/admin', 'problems']">Problems</a>
+            </mat-list-item>
+            <mat-list-item *ngIf="admin.superUser">
+                <mat-icon mat-list-icon>assignment_ind</mat-icon>
+                <a mat-line [routerLink]="['/admin', 'admins']">Admins</a>
+            </mat-list-item>
+            <mat-list-item>
+                <mat-icon mat-list-icon>group_add</mat-icon>
+                <a mat-line [routerLink]="['/admin', 'add-team']">Add Team</a>
+            </mat-list-item>
         </mat-nav-list>
     </mat-sidenav>
     <mat-sidenav-content>

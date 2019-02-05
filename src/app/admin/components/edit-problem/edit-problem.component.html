@@ -57,6 +57,8 @@
         </mat-form-field>
         <app-edit-graded-problem *ngIf="isGradedProblem" [mainFormGroup]="formGroup"
                                  [gradedProblem]="problem"></app-edit-graded-problem>
+        <app-edit-open-ended-problem *ngIf="!isGradedProblem" [mainFormGroup]="formGroup"
+                                     [openEndedProblem]="problem"></app-edit-open-ended-problem>
     </mat-dialog-content>
     <mat-dialog-actions>
         <button mat-button color="accent" type="button" [mat-dialog-close]="['save', formValue]">Save</button>

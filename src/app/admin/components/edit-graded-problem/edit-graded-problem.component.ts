@@ -1,16 +1,17 @@
-import { Component, Input, OnInit } from '@angular/core';
+import {Component, Input, OnDestroy, OnInit} from '@angular/core';
 import { GradedProblemModel, TestCaseModel, TestCaseOutputMode } from '../../../../../../common/src/models/problem.model';
-import { FormArray, FormControl, FormGroup } from '@angular/forms';
+import {AbstractControl, FormArray, FormControl, FormGroup} from '@angular/forms';
 
 @Component({
   selector: 'app-edit-graded-problem',
   templateUrl: './edit-graded-problem.component.html',
   styleUrls: ['./edit-graded-problem.component.scss']
 })
-export class EditGradedProblemComponent implements OnInit {
+export class EditGradedProblemComponent implements OnInit, OnDestroy {
   @Input() mainFormGroup: FormGroup;
   @Input() gradedProblem: GradedProblemModel;
 
+  controls: {[name: string]: AbstractControl};
   testCases: FormArray;
 
   constructor() {
@@ -19,12 +20,16 @@ export class EditGradedProblemComponent implements OnInit {
   ngOnInit() {
     this.testCases = new FormArray((this.gradedProblem.testCases ? this.gradedProblem.testCases : []).map(testCase => this.createTestCaseGroup(testCase)));
 
-    const controls = {
+    this.controls = {
       testCaseOutputMode: new FormControl(this.gradedProblem.testCaseOutputMode),
       testCases: this.testCases
     };
 
-    Object.keys(controls).forEach(key => this.mainFormGroup.addControl(key, controls[key]));
+    Object.keys(this.controls).forEach(key => this.mainFormGroup.addControl(key, this.controls[key]));
+  }
+
+  ngOnDestroy() {
+    Object.keys(this.controls).forEach(key => this.mainFormGroup.removeControl(key));
   }
 
   addTestCase(testCase?: TestCaseModel) {

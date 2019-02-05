@@ -15,6 +15,7 @@
     <app-card title="Problem">
       <p [innerHtml]="problem.description"></p>
     </app-card>
+    <!-- TODO: Different card for open-ended problem. -->
     <app-card title="IO" [pad]="false">
       <mat-table #table [dataSource]="problem.testCases">
         <ng-container matColumnDef="input">
@@ -52,7 +53,7 @@
   <app-card title="Submissions" [pad]="false" *ngIf="submissions.length > 0">
     <mat-list>
       <mat-list-item *ngFor="let submission of submissions; let i = index"><a
-          [routerLink]="['/', 'dashboard', 'submission', submission._id]">Submission {{i + 1}}{{submission.test ? '(Test)' : ''}}</a></mat-list-item>
+          [routerLink]="['/', 'dashboard', 'submission', submission._id]">Submission {{i + 1}}{{submission.test ? ' (Test)' : ''}}</a></mat-list-item>
     </mat-list>
   </app-card>
 </div>
