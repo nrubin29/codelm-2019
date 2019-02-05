@@ -11,7 +11,7 @@ import {Server, Socket} from "socket.io";
 import {SubmissionPacket} from "../../common/src/packets/submission.packet";
 import {ClientProblemSubmission, ServerProblemSubmission} from "../../common/src/problem-submission";
 import {ProblemDao} from "./daos/problem.dao";
-import {isGradedProblem} from "../../common/src/models/problem.model";
+import {isGradedProblem, isOpenEndedProblem} from "../../common/src/models/problem.model";
 import {isFalse, SubmissionDao} from "./daos/submission.dao";
 import {execFile, spawn} from "child_process";
 import {
@@ -23,6 +23,7 @@ import {Game} from "../../common/src/models/game.model";
 import {GameResult} from "../../coderunner/src/games/game.result";
 import {SubmissionStatusPacket} from "../../common/src/packets/submission.status.packet";
 import {SubmissionCompletedPacket} from "../../common/src/packets/submission.completed.packet";
+import {GamePacket} from "../../common/src/packets/game.packet";
 
 export class SocketManager {
   private static _instance: SocketManager;
@@ -180,7 +181,7 @@ export class SocketManager {
     let stderr = '';
 
     process.stdout.on('data',  (data: Buffer) => {
-      const obj = JSON.parse(data.toString());
+      const obj = JSON.parse(data.toString().trim());
 
       if (obj.hasOwnProperty('status')) {
         this.emitToSocket(new SubmissionStatusPacket(obj['status']), socket);
@@ -191,11 +192,16 @@ export class SocketManager {
         this.emitToSocket(new SubmissionStatusPacket('test case completed'), socket);
       }
 
+      else if (isOpenEndedProblem(problem)) {
+        this.emitToSocket(new GamePacket(obj), socket);
+      }
+
       else {
         throw new Error('Unknown object from container: ' + JSON.stringify(obj));
       }
     });
 
+    // TODO: What if an error occurs in the middle of running?
     process.stderr.on('data', (data: Buffer) => stderr += data.toString());
 
     process.on('exit', async () => {
