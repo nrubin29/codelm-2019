@@ -7,7 +7,7 @@ export class HighLow implements Game {
   guesses: number;
 
   constructor() {
-    this.answer = Math.random() * 100;
+    this.answer = 4; // Chosen by a fair roll of a die. // Math.random() * 100;
     this.guesses = 0;
   }
 

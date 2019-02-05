@@ -29,12 +29,7 @@ export class CodeRunner {
 
   constructor(private language: Language, public folder: string, public files: CodeFile[]) {
     this.output = new Subject<object>();
-
     this.files.concat(this.language.files || []);
-  }
-
-  protected before() {
-
   }
 
   private runProcessSync(cmd: string, args: string[], input?: string): Promise<ProcessRunResult> {
@@ -65,20 +60,36 @@ export class CodeRunner {
   protected runProcessAsync(cmd: string, args: ReadonlyArray<string>, game: Game): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       try {
-        const process = spawn(cmd, args);
-        process.stdout.on('data', data => {
-          this.output.next({output: data});
-          const result = game.onInput(data);
-          this.output.next({input: result});
+        // TODO: If no output, event never triggers.
+        const process = spawn(cmd, args, {cwd: this.folder});
+
+        process.stdout.on('data', (data: Buffer) => {
+          const result = game.onInput(data.toString());
+          // TODO: If this line runs twice in a very short timespan, the container will output two JSON objects on the same line.
+          this.output.next({input: result, output: data.toString()});
 
           if (typeof result === 'string') {
-            process.stdin.write(result);
+            process.stdin.write(result + '\n');
           }
 
           else {
+            process.kill();
             resolve();
           }
         });
+
+        // TODO: Handle stderr correctly.
+        process.stderr.on('data', (data: Buffer) => {
+          console.error(data.toString());
+        });
+
+        // process.on('exit', () => {
+        //   resolve();
+        // });
+
+        // setTimeout(() => {
+        //
+        // }, 5000);
       }
 
       catch (e) {
@@ -129,25 +140,24 @@ export class CodeRunner {
   }
 
   async setup() {
-    try {
-      this.before();
-
-      if (await fs.pathExists(this.folder)) {
-        await fs.remove(this.folder);
-      }
-
-      await fs.mkdir(this.folder);
-
-      await Promise.all(this.files.map(file => file.mkfile(this.folder)));
-
-      this.output.next({status: 'compiling'});
-      await this.compile();
-
-      this.output.next({status: 'compiling'});
+    if (await fs.pathExists(this.folder)) {
+      await fs.remove(this.folder);
     }
 
-    catch {
+    await fs.mkdir(this.folder);
+
+    await Promise.all(this.files.map(file => file.mkfile(this.folder)));
+
+    this.output.next({status: 'compiling'});
+
+    try {
+      await this.compile();
+      this.output.next({status: 'setup complete'});
+    }
+
+    catch (e) {
       await this.cleanUp();
+      throw e;
     }
   }
 

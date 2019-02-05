@@ -15,7 +15,7 @@ stdin.once('data', async data => {
 
   await runner.setup();
 
-  runner.output.subscribe(next => console.log(JSON.stringify(next)));
+  runner.output.subscribe(next => process.stdout.write(JSON.stringify(next) + '\n'));
 
   try {
     if (submission.type === ProblemType.OpenEnded) {
