@@ -1,3 +1,4 @@
 export interface GameResult {
-  score: number;
+  score?: number;
+  error?: string;
 }

@@ -8,20 +8,20 @@ export interface Language {
 }
 
 export const languages: {[language: string]: Language} = Object.freeze({
-  'java': {
+  java: {
     compile: files => ['javac '].concat(files),
     run: files => ['java ', files[0].substring(0, files[0].length - 5)],
     extension: 'java'
   },
-  'python': {
+  python: {
     compile: files => ['python', '-m', 'py_compile'].concat(files),
     run: files => ['python3', files[0]],
     extension: 'py',
     files: [new CodeFile('__init__.py', '')]
   },
-  'cpp': {
+  cpp: {
     compile: files => ['g++'].concat(files),
     run: () => ['./a.out'],
-    'extension': 'cpp'
+    extension: 'cpp'
   }
 });

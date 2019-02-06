@@ -63,6 +63,12 @@ export class CodeRunner {
         // TODO: If no output, event never triggers.
         const process = spawn(cmd, args, {cwd: this.folder});
 
+        const timeout = setTimeout(() => {
+          process.kill();
+          this.output.next({error: 'timeout'});
+          reject();
+        }, 5000); // TODO: Increase timeout
+
         process.stdout.on('data', (data: Buffer) => {
           const result = game.onInput(data.toString());
           // TODO: If this line runs twice in a very short timespan, the container will output two JSON objects on the same line.
@@ -74,13 +80,14 @@ export class CodeRunner {
 
           else {
             process.kill();
+            clearTimeout(timeout);
             resolve();
           }
         });
 
         // TODO: Handle stderr correctly.
         process.stderr.on('data', (data: Buffer) => {
-          console.error(data.toString());
+          this.output.next({error: data.toString()});
         });
 
         // process.on('exit', () => {

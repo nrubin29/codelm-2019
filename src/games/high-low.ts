@@ -15,7 +15,11 @@ export class HighLow implements Game {
     this.guesses++;
     const guess = parseInt(data);
 
-    if (guess > this.answer) {
+    if (isNaN(guess)) {
+      return {error: 'invalid guess'};
+    }
+
+    else if (guess > this.answer) {
       return 'Too high';
     }
 

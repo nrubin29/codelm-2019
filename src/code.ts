@@ -24,7 +24,7 @@ stdin.once('data', async data => {
       }
 
       else {
-        console.error(JSON.stringify({error: 'Invalid game ' + submission.game}));
+        process.stderr.write(JSON.stringify({error: 'Invalid game ' + submission.game}) + '\n');
       }
     }
 
@@ -34,6 +34,6 @@ stdin.once('data', async data => {
   }
 
   catch (e) {
-    console.error(JSON.stringify(e));
+    process.stderr.write(JSON.stringify(e) + '\n');
   }
 });
