@@ -1,8 +1,11 @@
-import { Component, Input, OnInit } from '@angular/core';
+import {Component, Inject, Input, OnInit} from '@angular/core';
 import { FormControl, FormGroup, NgForm, Validators } from '@angular/forms';
 import { AdminModel } from '../../../../../../common/src/models/admin.model';
 import { AdminService } from '../../../services/admin.service';
 import { AdminsComponent } from '../../views/admins/admins.component';
+import {MAT_DIALOG_DATA, MatDialogRef} from "@angular/material";
+import {EditProblemComponent} from "../edit-problem/edit-problem.component";
+import {DivisionModel} from "../../../../../../common/src/models/division.model";
 
 @Component({
   selector: 'app-edit-admin',
@@ -10,15 +13,15 @@ import { AdminsComponent } from '../../views/admins/admins.component';
   styleUrls: ['./edit-admin.component.scss']
 })
 export class EditAdminComponent implements OnInit {
-  @Input() admin: AdminModel;
+  admin: AdminModel;
 
   formGroup: FormGroup;
   originalPassword: string;
 
-  constructor(private adminService: AdminService, private adminsComponent: AdminsComponent) { }
+  constructor(private adminService: AdminService, private dialogRef: MatDialogRef<EditProblemComponent>, @Inject(MAT_DIALOG_DATA) private data: {admin: AdminModel}) { }
 
   ngOnInit() {
-    this.admin = this.admin ? this.admin : {_id: undefined, name: undefined, superUser: false, username: undefined, password: undefined, salt: undefined};
+    this.admin = this.data.admin ? this.data.admin : {_id: undefined, name: undefined, superUser: false, username: undefined, password: undefined, salt: undefined};
     this.originalPassword = this.admin.password;
 
     this.formGroup = new FormGroup({
@@ -30,23 +33,7 @@ export class EditAdminComponent implements OnInit {
     });
   }
 
-  submit(form: NgForm) {
-    const admin = form.value;
-
-    if (this.originalPassword === admin.password) {
-      delete admin.password;
-    }
-
-    this.adminService.addOrUpdateAdmin(form.value).then(() => {
-      this.adminsComponent.reload();
-    }).catch(alert);
-  }
-
-  delete() {
-    if (confirm('Are you sure you want to delete this admin?')) {
-      this.adminService.deleteAdmin(this.admin._id).then(() => {
-        this.adminsComponent.reload();
-      }).catch(alert);
-    }
+  get formValue() {
+    return this.formGroup.getRawValue();
   }
 }

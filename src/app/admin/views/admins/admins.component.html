@@ -2,25 +2,24 @@
   <mat-toolbar-row>
     <span>Admins</span>
     <span class="spacer"></span>
-    <button mat-raised-button color="accent" (click)="admin = null"><mat-icon>add</mat-icon></button>
+    <button mat-raised-button color="accent" (click)="edit(null)"><mat-icon>add</mat-icon></button>
   </mat-toolbar-row>
 </mat-toolbar>
-<div class="flex display-side">
-  <table>
-    <thead>
-    <tr>
-      <th>Username</th>
-      <th>Name</th>
-      <th>Superuser</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr *ngFor="let adm of admins">
-      <td>{{adm.username}}</td>
-      <td><a (click)="admin = adm" href="javascript:void(0)">{{adm.name}}</a></td>
-      <td><input type="checkbox" [checked]="adm.superUser" disabled></td>
-    </tr>
-    </tbody>
-  </table>
-  <app-edit-admin *ngIf="ready && admin !== undefined" [admin]="admin"></app-edit-admin>
+<div class="container">
+  <mat-table [dataSource]="admins">
+    <ng-container matColumnDef="username">
+      <mat-header-cell *matHeaderCellDef>Username</mat-header-cell>
+      <mat-cell *matCellDef="let element"><a (click)="edit(element)" href="javascript:void(0)">{{element.username}}</a></mat-cell>
+    </ng-container>
+    <ng-container matColumnDef="name">
+      <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
+      <mat-cell *matCellDef="let element">{{element.name}}</mat-cell>
+    </ng-container>
+    <ng-container matColumnDef="superUser">
+      <mat-header-cell *matHeaderCellDef>Superuser</mat-header-cell>
+      <mat-cell *matCellDef="let element"><mat-checkbox color="accent" [checked]="element.superUser" disabled></mat-checkbox></mat-cell>
+    </ng-container>
+    <mat-header-row *matHeaderRowDef="['username', 'name', 'superUser']"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: ['username', 'name', 'superUser'];"></mat-row>
+  </mat-table>
 </div>

@@ -44,7 +44,8 @@ import { EditOpenEndedProblemComponent } from './components/edit-open-ended-prob
   ],
   entryComponents: [
     EditProblemComponent,
-    EditDivisionComponent
+    EditDivisionComponent,
+    EditAdminComponent
   ],
 })
 export class AdminModule { }

@@ -20,6 +20,7 @@ import { AdminComponent } from './views/admin/admin.component';
 import { NgModule } from '@angular/core';
 import { SuperUserGuard } from '../guards/super-user.guard';
 import { DivisionsResolve } from '../resolves/divisions.resolve';
+import {AdminsResolve} from "../resolves/admins.resolve";
 
 const routes: Routes = [
   {
@@ -30,9 +31,9 @@ const routes: Routes = [
         {path: 'team/:id', component: TeamComponent, resolve: {team: TeamResolve, submissions: SubmissionsResolve}},
         {path: 'submission/:id', component: SubmissionComponent, resolve: {submission: SubmissionResolve}},
         {path: 'disputes', component: DisputesComponent, resolve: {disputes: DisputesResolve}},
-        {path: 'divisions', component: DivisionsComponent, canActivate: [SuperUserGuard]},
+        {path: 'divisions', component: DivisionsComponent, canActivate: [SuperUserGuard], resolve: {divisions: DivisionsResolve}},
         {path: 'problems', component: ProblemsComponent, canActivate: [SuperUserGuard], resolve: {divisionsAndProblems: DivisionsProblemsResolve}},
-        {path: 'admins', component: AdminsComponent, canActivate: [SuperUserGuard]},
+        {path: 'admins', component: AdminsComponent, canActivate: [SuperUserGuard], resolve: {admins: AdminsResolve}},
         {path: 'add-team', component: EditTeamComponent, resolve: {divisions: DivisionsResolve}}
       ]
   }

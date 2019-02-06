@@ -15,17 +15,18 @@ import {GamePacket} from "../../../../../../common/src/packets/game.packet";
   styleUrls: ['./highlow.component.scss']
 })
 export class HighlowComponent implements OnInit {
+  log = [];
 
   constructor(private dashboardComponent: DashboardComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
 
   ngOnInit() {
     this.dashboardComponent.toggle().then(() => {
       this.socketService.on<SubmissionStatusPacket>('submissionStatus', packet => {
-        console.log(packet.status);
+        this.log.push('status: ' + JSON.stringify(packet.status) + '\n')
       });
 
       this.socketService.on<GamePacket>('game', packet => {
-        console.log(packet.data);
+        this.log.push('data: ' + JSON.stringify(packet.data)+ '\n');
       });
 
       this.socketService.once<SubmissionCompletedPacket>('submissionCompleted', packet => {
