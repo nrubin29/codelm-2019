@@ -1,1 +1,25 @@
-<p *ngFor="let line of log">{{line}}</p>
+<mat-toolbar color="primary">
+    <mat-toolbar-row>
+        <!-- <a [routerLink]="['/dashboard', 'problem', submission.problem._id]" *ngIf="!admin && submission.points === 0"
+           class="back">
+            <mat-icon>arrow_back</mat-icon>
+        </a> -->
+        <span>High-Low Game</span>
+        <span class="spacer"></span>
+        <h3 style="font-variant: normal" *ngIf="_id">ID: <span class="mono">{{_id}}</span></h3>
+    </mat-toolbar-row>
+</mat-toolbar>
+<h1>Status:</h1>
+<p>{{status}}</p>
+<table mat-table [dataSource]="log">
+    <ng-container matColumnDef="guess">
+        <th mat-header-cell *matHeaderCellDef>Guess</th>
+        <td mat-cell *matCellDef="let element">{{element.output}}</td>
+    </ng-container>
+    <ng-container matColumnDef="result">
+        <th mat-header-cell *matHeaderCellDef>Result</th>
+        <td mat-cell *matCellDef="let element">{{element.input|json}}</td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="['guess', 'result']"></tr>
+    <tr mat-row *matRowDef="let row; columns: ['guess', 'result'];"></tr>
+</table>

@@ -84,12 +84,12 @@ export class ProblemComponent implements OnInit, AfterViewInit, OnDestroy {
       test: test
     } as ClientProblemSubmission;
 
-    if (isGradedProblem(this.problem)) {
+    if (!test || isGradedProblem(this.problem)) {
       this.router.navigate(['dashboard', 'submit']);
     }
 
     else {
-      this.router.navigate(['dashboard', 'game', (<OpenEndedProblemModel>this.problem).game.toLowerCase().replace(' ', '')])
+      this.router.navigate(['dashboard', 'game', (<OpenEndedProblemModel>this.problem).game.toLowerCase().replace(' ', '')]);
     }
   }
 }

@@ -1,7 +1,9 @@
-import { Component, Input, OnInit } from '@angular/core';
+import {Component, Input, OnInit, ViewChild} from '@angular/core';
 import { SubmissionComponent } from '../submission/submission.component';
 import { UploadSubmissionModel } from '../../../../../../common/src/models/submission.model';
 import { SubmissionService } from '../../../services/submission.service';
+import {CodeMirrorComponent} from "../../components/code-mirror/code-mirror.component";
+import {CodeSaverService} from "../../../services/code-saver.service";
 
 @Component({
   selector: 'app-upload-submission',
@@ -12,10 +14,15 @@ export class UploadSubmissionComponent implements OnInit {
   @Input() submission: UploadSubmissionModel;
   score: number;
 
-  constructor(private submissionComponent: SubmissionComponent, private submissionService: SubmissionService) {
+  mode: string;
+  @ViewChild(CodeMirrorComponent) codeMirror: CodeMirrorComponent;
+
+  constructor(private submissionComponent: SubmissionComponent, private submissionService: SubmissionService, private codeSaverService: CodeSaverService) {
   }
 
   ngOnInit() {
+    this.mode = this.codeSaverService.getMode(this.submission.language);
+    this.codeMirror.writeValue(this.submission.code);
   }
 
   setScore() {
