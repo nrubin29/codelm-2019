@@ -24,7 +24,7 @@ stdin.once('data', async data => {
       }
 
       else {
-        process.stderr.write(JSON.stringify({error: 'Invalid game ' + submission.game}) + '\n');
+        process.stdout.write(JSON.stringify({error: 'Invalid game ' + submission.game}) + '\n');
       }
     }
 
@@ -34,6 +34,6 @@ stdin.once('data', async data => {
   }
 
   catch (e) {
-    process.stderr.write(JSON.stringify(e) + '\n');
+    process.stdout.write(JSON.stringify({error: e}) + '\n');
   }
 });

@@ -71,7 +71,6 @@ export class CodeRunner {
 
         process.stdout.on('data', (data: Buffer) => {
           const result = game.onInput(data.toString());
-          // TODO: If this line runs twice in a very short timespan, the container will output two JSON objects on the same line.
           this.output.next({input: result, output: data.toString()});
 
           if (typeof result === 'string') {
