@@ -34,7 +34,7 @@ export class DivisionDao {
     }
   }
 
-  static deleteDivision(id: string): Promise<void> {
+  static deleteDivision(id: string): Promise<any> {
     return Division.deleteOne({_id: id}).exec();
   }
 }

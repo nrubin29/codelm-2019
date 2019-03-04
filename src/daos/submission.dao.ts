@@ -54,17 +54,12 @@ TestCaseSubmissionSchema.virtual('correct').get(function() {
   return isTestCaseSubmissionCorrect(this, this.parent().problem);
 });
 
-const SubmissionFileSchema = new mongoose.Schema({
-  name: String,
-  contents: String
-});
-
 const SubmissionSchema = new mongoose.Schema({
+  type: String,
   team: {type: mongoose.Schema.Types.ObjectId, ref: 'Team'},
   problem: {type: mongoose.Schema.Types.ObjectId, ref: 'Problem'},
   language: String,
   code: String,
-  files: [SubmissionFileSchema],
   score: Number,
   test: {type: Boolean, default: false},
   testCases: [TestCaseSubmissionSchema],
@@ -161,15 +156,17 @@ export class SubmissionDao {
   static async getScoreForTeam(teamId: string): Promise<number> {
     // This is needed because if the score is calculated in team.dao, there is circular population.
     const submissions = await Submission.find({team: teamId}).populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec();
-    return submissions.reduce(((previousValue: number, currentValue: any) => previousValue + currentValue.toObject().points), 0);
+    return submissions.reduce((previousValue: number, currentValue: SubmissionType) => previousValue + (currentValue.toObject().points || 0), 0);
   }
 
   static addSubmission(submission: SubmissionModel): Promise<SubmissionModel> {
     return Submission.create(submission);
   }
 
-  static updateSubmission(id: string, submission: SubmissionModel): Promise<SubmissionModel> {
-    return Submission.findOneAndUpdate({_id: id}, submission, {new: true}).populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec();
+  static async updateSubmission(id: string, submission: SubmissionModel): Promise<SubmissionModel> {
+    const subm = await Submission.findOneAndUpdate({_id: id}, submission, {new: true}).populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec();
+    SocketManager.instance.emit(subm.team._id.toString(), new UpdateTeamPacket());
+    return subm;
   }
 
   static async deleteSubmission(id: string): Promise<void> {

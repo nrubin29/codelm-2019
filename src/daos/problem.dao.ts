@@ -56,7 +56,7 @@ export class ProblemDao {
     }
   }
 
-  static deleteProblem(id: string): Promise<void> {
+  static deleteProblem(id: string): Promise<any> {
     return Problem.deleteOne({_id: id}).exec();
   }
 }

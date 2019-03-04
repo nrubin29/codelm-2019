@@ -120,7 +120,7 @@ export class TeamDao {
     }
   }
 
-  static deleteTeam(id: string): Promise<void> {
+  static deleteTeam(id: string): Promise<any> {
     return Team.deleteOne({_id: id}).exec();
   }
 
