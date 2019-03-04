@@ -18,18 +18,20 @@ export interface DisputeModel {
 
 export interface SubmissionModel {
   _id?: string;
+  type: 'graded' | 'upload';
   team: TeamModel;
   problem: ProblemModel;
   points?: number;
   datetime?: Date;
+  language: string;
+  code: string;
+  test: boolean;
 }
 
 export interface GradedSubmissionModel extends SubmissionModel {
+  type: 'graded';
   problem: GradedProblemModel;
-  language: string;
-  code: string;
   result?: string;
-  test: boolean;
   overrideCorrect?: boolean;
   dispute?: DisputeModel;
   error?: string;
@@ -37,14 +39,15 @@ export interface GradedSubmissionModel extends SubmissionModel {
 }
 
 export function isGradedSubmission(submission: SubmissionModel): submission is GradedSubmissionModel {
-  return (submission as any).code !== undefined;
+  return submission.type === 'graded';
 }
 
 export interface UploadSubmissionModel extends SubmissionModel {
+  type: 'upload';
   problem: OpenEndedProblemModel;
   score: number;
 }
 
 export function isUploadSubmission(submission: SubmissionModel): submission is UploadSubmissionModel {
-  return (submission as any).files !== undefined;
+  return submission.type === 'upload';
 }
