@@ -64,7 +64,7 @@ export class SocketManager {
     this.sockets = new Map<string, Socket>();
 
     server.on('connection', socket => {
-      let _id;
+      let _id: string;
 
       socket.use((pkt, next) => {
         const packet = pkt[1];
@@ -79,37 +79,57 @@ export class SocketManager {
         }
       });
 
-      socket.on('login', packet => this.onLoginPacket(packet as LoginPacket, socket));
-      socket.on('register', packet => this.onRegisterPacket(packet as RegisterPacket, socket));
+      socket.on('login', packet => this.onLoginPacket(packet as LoginPacket, socket).then(__id => _id = __id));
+      socket.on('register', packet => this.onRegisterPacket(packet as RegisterPacket, socket).then(__id => _id = __id));
       socket.on('submission', packet => this.onSubmissionPacket(packet as SubmissionPacket, socket));
 
       socket.once('disconnect', () => {
-        // TODO: delete socket by ID.
-        // this.sockets.delete(_id);
+        if (_id) {
+          this.sockets.delete(_id);
+        }
       });
     });
   }
 
-  onLoginPacket(loginPacket: LoginPacket, socket: Socket) {
-    TeamDao.login(loginPacket.username, loginPacket.password).then(team => {
-      PermissionsUtil.hasAccess(team).then(access => {
-        const response = access ? LoginResponse.SuccessTeam : LoginResponse.Closed;
-        this.emitToSocket(new LoginResponsePacket(response, response === LoginResponse.SuccessTeam ? sanitizeTeam(team) : undefined), socket);
+  onLoginPacket(loginPacket: LoginPacket, socket: Socket): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      TeamDao.login(loginPacket.username, loginPacket.password).then(team => {
+        PermissionsUtil.hasAccess(team).then(access => {
+          const response = access ? LoginResponse.SuccessTeam : LoginResponse.Closed;
+          this.emitToSocket(new LoginResponsePacket(response, response === LoginResponse.SuccessTeam ? sanitizeTeam(team) : undefined), socket);
 
-        if (response === LoginResponse.SuccessTeam) {
-          this.sockets.set(team._id.toString(), socket);
+          if (response === LoginResponse.SuccessTeam) {
+            this.sockets.set(team._id.toString(), socket);
+            resolve(team._id);
+          }
+
+          else {
+            socket.disconnect(true);
+            reject();
+          }
+        });
+      }).catch((response: LoginResponse | Error) => {
+        if (response === LoginResponse.NotFound) {
+          AdminDao.login(loginPacket.username, loginPacket.password).then(admin => {
+            this.sockets.set(admin._id.toString(), socket);
+            this.emitToSocket(new LoginResponsePacket(LoginResponse.SuccessAdmin, undefined, admin), socket);
+            resolve(admin._id);
+          }).catch((response: LoginResponse | Error) => {
+            if ((response as any).stack !== undefined) {
+              console.error(response);
+              this.emitToSocket(new LoginResponsePacket(LoginResponse.Error), socket);
+            }
+
+            else {
+              this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
+            }
+
+            socket.disconnect(true);
+            reject();
+          });
         }
 
         else {
-          socket.disconnect(true);
-        }
-      });
-    }).catch((response: LoginResponse | Error) => {
-      if (response === LoginResponse.NotFound) {
-        AdminDao.login(loginPacket.username, loginPacket.password).then(admin => {
-          this.sockets.set(admin._id.toString(), socket);
-          this.emitToSocket(new LoginResponsePacket(LoginResponse.SuccessAdmin, undefined, admin), socket);
-        }).catch((response: LoginResponse | Error) => {
           if ((response as any).stack !== undefined) {
             console.error(response);
             this.emitToSocket(new LoginResponsePacket(LoginResponse.Error), socket);
@@ -120,38 +140,32 @@ export class SocketManager {
           }
 
           socket.disconnect(true);
-        });
-      }
-
-      else if ((response as any).stack !== undefined) {
-        console.error(response);
-        this.emitToSocket(new LoginResponsePacket(LoginResponse.Error), socket);
-        socket.disconnect(true);
-      }
-
-      else {
-        this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
-        socket.disconnect(true);
-      }
+          reject();
+        }
+      });
     });
   }
 
-  onRegisterPacket(packet: RegisterPacket, socket: Socket) {
-    const registerPacket = packet as RegisterPacket;
-    // TODO: Merge this with the login code.
-    TeamDao.register(registerPacket.teamData).then(team => {
-      this.onLoginPacket({name: 'login', username: registerPacket.teamData.username, password: registerPacket.teamData.password, version: registerPacket.version}, socket);
-    }).catch((response: LoginResponse | Error) => {
-      if ((response as any).stack !== undefined) {
-        console.error(response);
-        this.emitToSocket(new LoginResponsePacket(LoginResponse.Error), socket);
-      }
+  onRegisterPacket(packet: RegisterPacket, socket: Socket): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      const registerPacket = packet as RegisterPacket;
+      TeamDao.register(registerPacket.teamData).then(team => {
+        this.onLoginPacket({name: 'login', username: registerPacket.teamData.username, password: registerPacket.teamData.password, version: registerPacket.version}, socket)
+          .then(resolve)
+          .catch(reject);
+      }).catch((response: LoginResponse | Error) => {
+        if ((response as any).stack !== undefined) {
+          console.error(response);
+          this.emitToSocket(new LoginResponsePacket(LoginResponse.Error), socket);
+        }
 
-      else {
-        this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
-      }
+        else {
+          this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
+        }
 
-      socket.disconnect(true);
+        socket.disconnect(true);
+        reject();
+      });
     });
   }
 
@@ -181,23 +195,31 @@ export class SocketManager {
     let stderr = '';
 
     process.stdout.on('data',  (data: Buffer) => {
-      const obj = JSON.parse(data.toString().trim());
+      // Sometimes, two packets will be read at once. This ensures that they are treated separately.
+      for (let packet of data.toString().split(new RegExp('(?<=})\n'))) {
+        // Every packet ends with a \n, so the last element of the split will always be empty, and we want to skip it.
+        if (!packet) {
+          continue;
+        }
 
-      if (obj.hasOwnProperty('status')) {
-        this.emitToSocket(new SubmissionStatusPacket(obj['status']), socket);
-      }
+        const obj = JSON.parse(packet.trim());
 
-      else if (obj.hasOwnProperty('testCase')) {
-        testCases.push(obj['testCase']);
-        this.emitToSocket(new SubmissionStatusPacket('test case completed'), socket);
-      }
+        if (obj.hasOwnProperty('status')) {
+          this.emitToSocket(new SubmissionStatusPacket(obj['status']), socket);
+        }
 
-      else if (isOpenEndedProblem(problem)) {
-        this.emitToSocket(new GamePacket(obj), socket);
-      }
+        else if (obj.hasOwnProperty('testCase')) {
+          testCases.push(obj['testCase']);
+          this.emitToSocket(new SubmissionStatusPacket('test case completed'), socket);
+        }
 
-      else {
-        throw new Error('Unknown object from container: ' + JSON.stringify(obj));
+        else if (isOpenEndedProblem(problem)) {
+          this.emitToSocket(new GamePacket(obj), socket);
+        }
+
+        else {
+          throw new Error('Unknown object from container: ' + JSON.stringify(obj));
+        }
       }
     });
 
@@ -219,6 +241,7 @@ export class SocketManager {
         }
 
         submission = await SubmissionDao.addSubmission({
+          type: isGradedProblem(problem) ? 'graded' : 'upload',
           team: packet.team,
           problem: problem,
           language: problemSubmission.language,
@@ -228,6 +251,7 @@ export class SocketManager {
         } as GradedSubmissionModel);
       } else {
         submission = await SubmissionDao.addSubmission({
+          type: isGradedProblem(problem) ? 'graded' : 'upload',
           team: packet.team,
           problem: problem,
           language: problemSubmission.language,

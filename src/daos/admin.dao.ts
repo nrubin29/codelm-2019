@@ -60,7 +60,7 @@ export class AdminDao {
     }
   }
 
-  static deleteAdmin(id: string): Promise<void> {
+  static deleteAdmin(id: string): Promise<any> {
     return Admin.deleteOne({_id: id}).exec();
   }
 }
