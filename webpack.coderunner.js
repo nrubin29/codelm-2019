@@ -1,12 +1,16 @@
 const path = require('path');
 const webpack = require('webpack');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
     plugins: [
         new webpack.DefinePlugin({
             "typeof window": JSON.stringify("object"),
             "window": JSON.stringify(false)
-        })
+        }),
+        new CopyPlugin([
+            { from: path.resolve(__dirname, 'Dockerfile'), to: path.resolve(__dirname, '..', 'dist', 'coderunner') }
+        ]),
     ],
     entry: {
         'code': './src/code.ts'
@@ -25,7 +29,7 @@ module.exports = {
     },
     output: {
         filename: '[name].js',
-        path: path.resolve(__dirname, 'dist')
+        path: path.resolve(__dirname, '..', 'dist', 'coderunner', 'dist')
     },
     target: "node"
 };

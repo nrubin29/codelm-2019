@@ -6,6 +6,6 @@ RUN ln -s /usr/lib/jvm/java-1.8-openjdk/bin/javac /bin/javac
 
 WORKDIR /coderunner
 
-ADD ./dist/code.js /coderunner
+COPY ./dist/code.js /coderunner
 
 CMD ["node", "code.js"]
