@@ -7,7 +7,7 @@ export const enum LoginResponse {
   SuccessAdmin = 'Success Admin',
   IncorrectPassword = 'Incorrect Password',
   NotFound = 'Account not found',
-  Closed = 'You cannot log in at this time',
+  Closed = 'The dashboard is currently closed',
   AlreadyExists = 'An account with that username already exists',
   OutdatedClient = 'Please refresh the page. If this error persists, clear your browser cache',
   Error = 'An internal error occurred.',

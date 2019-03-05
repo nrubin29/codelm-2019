@@ -1,5 +1,4 @@
 export enum SettingsState {
-  Preliminaries = 'Preliminaries',
   Graded = 'Graded',
   Upload = 'Upload',
   Closed = 'Closed',
@@ -15,7 +14,7 @@ export interface ScheduleModel {
 export interface SettingsModel {
   state: SettingsState;
   schedule: ScheduleModel[];
-  openRegistration: boolean;
+  preliminaries: boolean;
 }
 
-export const defaultSettingsModel: SettingsModel = Object.freeze({state: SettingsState.Closed, schedule: [], openRegistration: false});
+export const defaultSettingsModel: SettingsModel = Object.freeze({state: SettingsState.Closed, schedule: [], preliminaries: false});
