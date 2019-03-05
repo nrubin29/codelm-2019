@@ -7,14 +7,24 @@ import {SettingsState} from '../../common/src/models/settings.model';
 import {DivisionType} from '../../common/src/models/division.model';
 
 export class PermissionsUtil {
+  static async canRegister(): Promise<boolean> {
+    const settings = await SettingsDao.getSettings();
+
+    return settings.state === SettingsState.Debug || (
+      settings.preliminaries &&
+      (settings.state === SettingsState.Graded || settings.state === SettingsState.Upload)
+    );
+  }
+
   static async hasAccess(team: TeamModel): Promise<boolean> {
     const settings = await SettingsDao.getSettings();
 
     return team.division.type === DivisionType.Special ||
       settings.state === SettingsState.Debug ||
-      (settings.state === SettingsState.Graded && team.division.type === DivisionType.Competition) ||
-      (settings.state === SettingsState.Upload && team.division.type === DivisionType.Competition) ||
-      (settings.state === SettingsState.Preliminaries && team.division.type === DivisionType.Preliminaries);
+      (settings.state === SettingsState.Graded || settings.state === SettingsState.Upload) && (
+        (!settings.preliminaries && team.division.type === DivisionType.Competition) ||
+        (settings.preliminaries && team.division.type === DivisionType.Preliminaries)
+      );
   }
 
   static async requireTeam(req: Request, res: Response, next: NextFunction) {
@@ -58,10 +68,17 @@ export class PermissionsUtil {
   }
 
   static async requestAdmin(req: Request, res: Response, next: NextFunction) {
-    req.params.admin = await AdminDao.getAdmin(req.header('Authorization').split(' ')[1]);
+    const id = req.header('Authorization').split(' ')[1];
 
-    if (!req.params.admin) {
-      delete req.params.admin;
+    if (id === 'undefined') {
+      next();
+      return;
+    }
+
+    const admin = await AdminDao.getAdmin(id);
+
+    if (admin) {
+      req.params.admin = admin;
     }
 
     next();

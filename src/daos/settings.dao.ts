@@ -15,7 +15,7 @@ const ScheduleSchema = new mongoose.Schema({
 const SettingsSchema = new mongoose.Schema({
   state: {type: String, default: SettingsState.Closed},
   schedule: [ScheduleSchema],
-  openRegistration: {type: Boolean, default: false}
+  preliminaries: {type: Boolean, default: false}
 });
 
 const Settings = mongoose.model<SettingsType>('Settings', SettingsSchema);

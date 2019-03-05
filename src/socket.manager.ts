@@ -1,26 +1,25 @@
-import { RegisterPacket } from '../../common/src/packets/register.packet';
-import { LoginPacket } from '../../common/src/packets/login.packet';
-import { sanitizeTeam, TeamDao } from './daos/team.dao';
-import { AdminDao } from './daos/admin.dao';
-import { Packet } from '../../common/src/packets/packet';
-import { PermissionsUtil } from './permissions.util';
-import { LoginResponse, LoginResponsePacket } from '../../common/src/packets/login.response.packet';
-import { VERSION } from '../../common/version';
-import { isClientPacket } from '../../common/src/packets/client.packet';
+import {RegisterPacket} from '../../common/src/packets/register.packet';
+import {LoginPacket} from '../../common/src/packets/login.packet';
+import {sanitizeTeam, TeamDao} from './daos/team.dao';
+import {AdminDao} from './daos/admin.dao';
+import {Packet} from '../../common/src/packets/packet';
+import {PermissionsUtil} from './permissions.util';
+import {LoginResponse, LoginResponsePacket} from '../../common/src/packets/login.response.packet';
+import {VERSION} from '../../common/version';
+import {isClientPacket} from '../../common/src/packets/client.packet';
 import {Server, Socket} from "socket.io";
 import {SubmissionPacket} from "../../common/src/packets/submission.packet";
-import {ClientProblemSubmission, ServerProblemSubmission} from "../../common/src/problem-submission";
+import {ServerProblemSubmission} from "../../common/src/problem-submission";
 import {ProblemDao} from "./daos/problem.dao";
 import {isGradedProblem, isOpenEndedProblem} from "../../common/src/models/problem.model";
 import {isFalse, SubmissionDao} from "./daos/submission.dao";
-import {execFile, spawn} from "child_process";
+import {spawn} from "child_process";
 import {
   GradedSubmissionModel,
   SubmissionModel,
-  TestCaseSubmissionModel, UploadSubmissionModel
+  TestCaseSubmissionModel
 } from "../../common/src/models/submission.model";
 import {Game} from "../../common/src/models/game.model";
-import {GameResult} from "../../coderunner/src/games/game.result";
 import {SubmissionStatusPacket} from "../../common/src/packets/submission.status.packet";
 import {SubmissionCompletedPacket} from "../../common/src/packets/submission.completed.packet";
 import {GamePacket} from "../../common/src/packets/game.packet";
@@ -149,22 +148,32 @@ export class SocketManager {
   onRegisterPacket(packet: RegisterPacket, socket: Socket): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       const registerPacket = packet as RegisterPacket;
-      TeamDao.register(registerPacket.teamData).then(team => {
-        this.onLoginPacket({name: 'login', username: registerPacket.teamData.username, password: registerPacket.teamData.password, version: registerPacket.version}, socket)
-          .then(resolve)
-          .catch(reject);
-      }).catch((response: LoginResponse | Error) => {
-        if ((response as any).stack !== undefined) {
-          console.error(response);
-          this.emitToSocket(new LoginResponsePacket(LoginResponse.Error), socket);
+      PermissionsUtil.canRegister().then(canRegister => {
+        if (canRegister) {
+          TeamDao.register(registerPacket.teamData).then(team => {
+            this.emitToSocket(new LoginResponsePacket(LoginResponse.SuccessTeam, sanitizeTeam(team)), socket);
+            this.sockets.set(team._id.toString(), socket);
+            resolve(team._id);
+          }).catch((response: LoginResponse | Error) => {
+            if ((response as any).stack !== undefined) {
+              console.error(response);
+              this.emitToSocket(new LoginResponsePacket(LoginResponse.Error), socket);
+            }
+
+            else {
+              this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
+            }
+
+            socket.disconnect(true);
+            reject();
+          });
         }
 
         else {
-          this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
+          this.emitToSocket(new LoginResponsePacket(LoginResponse.Closed), socket);
+          socket.disconnect(true);
+          reject();
         }
-
-        socket.disconnect(true);
-        reject();
       });
     });
   }
