@@ -16,9 +16,9 @@ import { SubmissionService } from '../../../services/submission.service';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
-  private team: TeamModel;
+  team: TeamModel;
   private submissions: SubmissionModel[];
-  private problems: ProblemModel[] = [];
+  problems: ProblemModel[] = [];
 
   @ViewChild(MatSidenav) private sideNav: MatSidenav;
 

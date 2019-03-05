@@ -16,7 +16,7 @@
       <p [innerHtml]="problem.description"></p>
     </app-card>
     <!-- TODO: Different card for open-ended problem. -->
-    <app-card title="IO" [pad]="false">
+    <app-card title="IO" [pad]="false" *ngIf="isGraded">
       <mat-table #table [dataSource]="problem.testCases">
         <ng-container matColumnDef="input">
           <mat-header-cell *matHeaderCellDef>Input</mat-header-cell>
@@ -50,7 +50,7 @@
   <app-code-mirror [config]="{ lineNumbers: true, lineWrapping: true, mode: 'text/x-c++src' }"
                    *ngIf="language === 'cpp'"></app-code-mirror>
   <br>
-  <app-card title="Submissions" [pad]="false" *ngIf="submissions.length > 0">
+  <app-card title="Submissions" [pad]="false" *ngIf="isGraded && submissions.length > 0">
     <mat-list>
       <mat-list-item *ngFor="let submission of submissions.slice().reverse()"><a
           [routerLink]="['/', 'dashboard', 'submission', submission._id]">{{submission.datetime|date:'shortTime'}} {{submission.test ? ' (Test)' : ''}}</a></mat-list-item>

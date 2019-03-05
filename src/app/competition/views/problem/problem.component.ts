@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChildren} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {
-  isGradedProblem,
+  isGradedProblem, isOpenEndedProblem,
   OpenEndedProblemModel,
   ProblemModel,
   ProblemType
@@ -64,6 +64,10 @@ export class ProblemComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.saveCode();
+  }
+
+  get isGraded() {
+    return isGradedProblem(this.problem);
   }
 
   saveCode() {
