@@ -41,7 +41,11 @@ export class EditProblemComponent implements OnInit {
   }
 
   get isGradedProblem() {
-    return this.formGroup.get('type').value === 'Graded';
+    return this.formGroup.get('type').value === ProblemType.Graded.toString();
+  }
+
+  get isUploadProblem() {
+    return this.formGroup.get('type').value === ProblemType.OpenEnded.toString();
   }
 
   get formValue() {

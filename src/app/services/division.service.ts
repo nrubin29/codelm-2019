@@ -27,7 +27,7 @@ export class DivisionService {
       delete division.upload;
     }
 
-    for (const key of Object.keys(division)) {
+    for (const key of Object.keys(division).filter(key => division[key])) {
       formData.append(key, division[key]);
     }
 

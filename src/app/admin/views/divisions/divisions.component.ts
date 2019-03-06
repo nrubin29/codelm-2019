@@ -37,7 +37,7 @@ export class DivisionsComponent implements OnInit {
         if (result === 'save') {
           this.divisionService.addOrUpdateDivision(data).then(response => {
             // TODO: If this is an error, display it.
-            console.log(response);
+            console.log(JSON.stringify(response));
           }).catch(alert);
         }
 

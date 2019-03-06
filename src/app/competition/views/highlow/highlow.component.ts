@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {DashboardComponent} from "../dashboard/dashboard.component";
 import {SubmissionStatusPacket} from "../../../../../../common/src/packets/submission.status.packet";
 import {SubmissionCompletedPacket} from "../../../../../../common/src/packets/submission.completed.packet";
@@ -16,24 +16,53 @@ import {isPacket} from "../../../../../../common/src/packets/packet";
   templateUrl: './highlow.component.html',
   styleUrls: ['./highlow.component.scss']
 })
-export class HighlowComponent implements OnInit {
+export class HighlowComponent implements AfterViewInit {
   queue: (SubmissionStatusPacket | GamePacket | SubmissionCompletedPacket)[] = [];
   log: object[] = [];
 
-  status = 'preparing';
+  status = 'Preparing';
+  error: string;
   _id: string;
 
+  @ViewChild('htmlLog') htmlLog: ElementRef<HTMLDivElement>;
   @ViewChild(MatTable) table: MatTable<object>;
 
   constructor(private dashboardComponent: DashboardComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
 
-  ngOnInit() {
+  ngAfterViewInit() {
     this.dashboardComponent.toggle().then(() => {
       this.socketService.on<SubmissionStatusPacket>('submissionStatus', packet => {
         this.queue.push(packet);
       });
 
       this.socketService.on<GamePacket>('game', packet => {
+        // TODO: If there's an error, clear the queue before putting the packet on.
+        // TODO: Show errors correctly.
+        if (packet.data.hasOwnProperty('error')) {
+          this.error = packet.data['error'];
+          this.queue = []; // TODO: Maybe this is a bad idea?
+          return;
+        }
+
+        else if (packet.data.hasOwnProperty('input')) {
+          if (typeof packet.data['input'] == 'object') {
+            if (packet.data['input'].hasOwnProperty('error')) {
+              this.error = packet.data['input']['error'];
+              this.queue = []; // TODO: Maybe this is a bad idea?
+              return;
+            }
+
+            else if (packet.data['input'].hasOwnProperty('score')) {
+              // TODO: Save score.
+              packet.data['input'] = 'Correct';
+            }
+          }
+
+          else {
+            packet.data['input'] = packet.data['input'] === '1' ? 'Too high' : packet.data['input'] === '-1' ? 'Too low': 'unknown';
+          }
+        }
+
         this.queue.push(packet);
       });
 
@@ -52,7 +81,7 @@ export class HighlowComponent implements OnInit {
 
             // this.teamService.refreshTeam().then(() => {
             this.dashboardComponent.toggle().then(() => {
-              this.status = 'finished';
+              this.status = 'Finished';
               this._id = packet._id;
               // setTimeout(() => {
               // this.finished = true;
@@ -69,9 +98,10 @@ export class HighlowComponent implements OnInit {
           else {
             this.log.push(packet.data);
             this.table.renderRows();
+            this.htmlLog.nativeElement.scrollTop = this.htmlLog.nativeElement.scrollHeight;
           }
         }
-      }, 1000);
+      }, 500);
 
       this.socketService.emit(new SubmissionPacket(this.problemService.problemSubmission, this.teamService.team.getValue(), VERSION));
     });

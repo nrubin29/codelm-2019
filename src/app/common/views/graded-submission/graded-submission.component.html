@@ -35,7 +35,7 @@
             </mat-table>
         </app-card>
         <app-card title="Error" *ngIf="submission.error">
-            <code>{{submission.error}}</code>
+            <code [innerHTML]="submissionError"></code>
         </app-card>
         <app-card title="Dispute"
                   *ngIf="submission.dispute || ((submission.test || submission.points === 0) && !admin)">

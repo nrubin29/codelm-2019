@@ -26,6 +26,10 @@ export class GradedSubmissionComponent implements OnInit {
     this.codeMirror.writeValue(this.submission.code);
   }
 
+  get submissionError() {
+    return this.submission.error.replace(/\n/g, '<br />');
+  }
+
   overrideCorrect() {
     const submission = {...this.submission} as GradedSubmissionModel;
     submission.overrideCorrect = !submission.overrideCorrect;
