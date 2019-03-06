@@ -201,19 +201,28 @@ export class SocketManager {
 
     const process = spawn('docker', ['run', '-i', '--rm', '--cap-drop', 'ALL', '--net=none', 'coderunner']);
     const testCases: TestCaseSubmissionModel[] = [];
-    let stderr = '';
+    const errors = [];
 
     process.stdout.on('data',  (data: Buffer) => {
       // Sometimes, two packets will be read at once. This ensures that they are treated separately.
-      for (let packet of data.toString().split(new RegExp('(?<=})\n'))) {
+      for (let packet of data.toString().split(/(?<=})\n/g)) {
         // Every packet ends with a \n, so the last element of the split will always be empty, and we want to skip it.
         if (!packet) {
           continue;
         }
 
         const obj = JSON.parse(packet.trim());
+        console.log(obj);
 
-        if (obj.hasOwnProperty('status')) {
+        if (obj.hasOwnProperty('error')) {
+          errors.push(obj['error']);
+
+          if (!isGradedProblem(problem)) {
+            this.emitToSocket(new GamePacket(obj), socket);
+          }
+        }
+
+        else if (obj.hasOwnProperty('status')) {
           this.emitToSocket(new SubmissionStatusPacket(obj['status']), socket);
         }
 
@@ -233,21 +242,15 @@ export class SocketManager {
     });
 
     // TODO: What if an error occurs in the middle of running?
-    process.stderr.on('data', (data: Buffer) => stderr += data.toString());
+    process.stderr.on('data', (data: Buffer) => {
+      throw new Error(data.toString());
+    });
 
     process.on('exit', async () => {
       let submission: SubmissionModel;
 
-      if (stderr.length > 0) {
-        let err;
-
-        try {
-          err = JSON.parse(stderr).error;
-        }
-
-        catch {
-          err = stderr;
-        }
+      if (errors.length > 0) {
+        const err = errors.join('\n');
 
         submission = await SubmissionDao.addSubmission({
           type: isGradedProblem(problem) ? 'graded' : 'upload',

@@ -18,7 +18,7 @@ app.use(bodyParser.urlencoded({extended: true})); // parse application/x-www-for
 app.use(bodyParser.json()); // parse application/json
 app.use(bodyParser.json({type: 'application/vnd.api+json'})); // Parse application/vnd.api+json as json
 app.use(fileUpload());
-app.use(express.static(path.join('.', 'files')));
+app.use(express.static(path.join('.', 'files'))); // TODO: Dynamic file serving (so /files/<division> and it'll serve the right zip file)
 app.use(express.static(path.join('.', 'dist', 'frontend')));
 app.use('/api', apiRoutes);
 
