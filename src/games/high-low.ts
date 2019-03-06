@@ -7,7 +7,7 @@ export class HighLow implements Game {
   guesses: number;
 
   constructor() {
-    this.answer = 4; // Chosen by a fair roll of a die. // Math.random() * 100;
+    this.answer = Math.floor(Math.random() * 100) + 1;
     this.guesses = 0;
   }
 
@@ -20,11 +20,11 @@ export class HighLow implements Game {
     }
 
     else if (guess > this.answer) {
-      return 'Too high';
+      return '1';
     }
 
     else if (guess < this.answer) {
-      return 'Too low';
+      return '-1';
     }
 
     else {

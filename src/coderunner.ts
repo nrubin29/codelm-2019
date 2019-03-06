@@ -34,73 +34,79 @@ export class CodeRunner {
 
   private runProcessSync(cmd: string, args: string[], input?: string): Promise<ProcessRunResult> {
     return new Promise<ProcessRunResult>((resolve, reject) => {
-      try {
-        const process = execFile(cmd, args, { cwd: this.folder, timeout: 5000 }, (err: Error & {signal: string}, stdout, stderr) => {
-          let error;
-
-          if (err && err.signal === 'SIGTERM') {
-            error = 'Timed out';
-          }
-
-          resolve({output: stdout.replace(/^\s+|\s+$/g, ''), error: error ? error : stderr.replace(/^\s+|\s+$/g, '')});
-        });
-
-        if (input) {
-          process.stdin.write(input + '\n');
-          process.stdin.end();
+      const process = execFile(cmd, args, { cwd: this.folder, timeout: 5000 }, (err: Error & {signal: string}, stdout, stderr) => {
+        if (err && err.signal === 'SIGTERM') {
+          reject({error: 'Timed out'});
         }
-      }
 
-      catch (e) {
-        reject(e);
+        else {
+          resolve({output: stdout.replace(/^\s+|\s+$/g, ''), error: stderr.replace(/^\s+|\s+$/g, '')});
+        }
+      });
+
+      if (input) {
+        process.stdin.write(input + '\n');
+        process.stdin.end();
       }
     });
   }
 
   protected runProcessAsync(cmd: string, args: ReadonlyArray<string>, game: Game): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      try {
-        // TODO: If no output, event never triggers.
-        const process = spawn(cmd, args, {cwd: this.folder});
+      // TODO: If no output, event never triggers.
+      const proc = spawn(cmd, args, {cwd: this.folder});
 
-        const timeout = setTimeout(() => {
-          process.kill();
-          this.output.next({error: 'timeout'});
-          reject();
-        }, 5000); // TODO: Increase timeout
+      const timeout = setTimeout(() => {
+        // process.kill(-proc.pid, 'SIGKILL');
+        proc.kill();
+        proc.stdout.removeAllListeners('data');
+        proc.stderr.removeAllListeners('data');
+        reject({error: 'Timed out'});
+      }, 5000); // TODO: Increase timeout
 
-        process.stdout.on('data', (data: Buffer) => {
-          const result = game.onInput(data.toString());
-          this.output.next({input: result, output: data.toString()});
+      let buf = '';
+      proc.stdout.on('data', (data: Buffer) => {
+        buf += data.toString();
+        let guess: string;
+
+        if (buf.indexOf('\n') !== -1) {
+          guess = buf.substring(0, buf.indexOf('\n') + 1);
+          buf = buf.substring(buf.indexOf('\n') + 1);
+        }
+
+        if (guess) {
+          // TODO: Cap the number of guesses.
+          const result = game.onInput(guess);
+          this.output.next({input: result, output: guess});
 
           if (typeof result === 'string') {
-            process.stdin.write(result + '\n');
+            proc.stdin.write(result + '\n');
           }
 
           else {
-            process.kill();
+            // process.kill(-proc.pid, 'SIGKILL');
+            proc.kill();
+            proc.stdout.removeAllListeners('data');
+            proc.stderr.removeAllListeners('data');
             clearTimeout(timeout);
             resolve();
           }
-        });
+        }
+      });
 
-        // TODO: Handle stderr correctly.
-        process.stderr.on('data', (data: Buffer) => {
-          this.output.next({error: data.toString()});
-        });
+      // TODO: Handle stderr correctly.
+      proc.stderr.on('data', (data: Buffer) => {
+        // process.kill(-proc.pid, 'SIGKILL');
+        proc.kill();
+        proc.stdout.removeAllListeners('data');
+        proc.stderr.removeAllListeners('data');
+        clearTimeout(timeout);
+        reject({error: data.toString()});
+      });
 
-        // process.on('exit', () => {
-        //   resolve();
-        // });
-
-        // setTimeout(() => {
-        //
-        // }, 5000);
-      }
-
-      catch (e) {
-        reject(e);
-      }
+      // proc.on('exit', () => {
+      //   resolve();
+      // });
     });
   }
 
@@ -146,57 +152,29 @@ export class CodeRunner {
   }
 
   async setup() {
-    if (await fs.pathExists(this.folder)) {
-      await fs.remove(this.folder);
-    }
-
     await fs.mkdir(this.folder);
 
     await Promise.all(this.files.map(file => file.mkfile(this.folder)));
 
-    this.output.next({status: 'compiling'});
+    this.output.next({status: 'Compiling'});
 
-    try {
-      await this.compile();
-      this.output.next({status: 'setup complete'});
-    }
-
-    catch (e) {
-      await this.cleanUp();
-      throw e;
-    }
+    await this.compile();
+    this.output.next({status: 'Setup complete'});
   }
 
   async run(testCases: TestCaseModel[]): Promise<void> {
-    try {
-      this.output.next({status: 'running'});
+    this.output.next({status: 'Running'});
 
-      for (let testCase of testCases) {
-        const result = await this.runTestCase(testCase);
-        this.output.next({testCase: result});
-      }
-    }
-
-    finally {
-      await this.cleanUp();
+    for (let testCase of testCases) {
+      const result = await this.runTestCase(testCase);
+      this.output.next({testCase: result});
     }
   }
 
   async runGame(game: Game): Promise<void> {
     const runCmd = this.language.run(this.files.map(file => file.name));
 
-    try {
-      this.output.next({status: 'running'});
-      await this.runProcessAsync(runCmd[0], runCmd.slice(1), game);
-    }
-
-    finally {
-      await this.cleanUp();
-    }
-  }
-
-  async cleanUp() {
-    this.output.next({status: 'cleaning up'});
-    await fs.remove(this.folder);
+    this.output.next({status: 'Running'});
+    await this.runProcessAsync(runCmd[0], runCmd.slice(1), game);
   }
 }

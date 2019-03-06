@@ -9,8 +9,8 @@ export interface Language {
 
 export const languages: {[language: string]: Language} = Object.freeze({
   java: {
-    compile: files => ['javac '].concat(files),
-    run: files => ['java ', files[0].substring(0, files[0].length - 5)],
+    compile: files => ['javac'].concat(files),
+    run: files => ['java', files[0].substring(0, files[0].length - 5)],
     extension: 'java'
   },
   python: {
