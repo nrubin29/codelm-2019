@@ -194,9 +194,8 @@ export class SocketManager {
       serverProblemSubmission.testCases = problem.testCases.filter(testCase => isFalse(problemSubmission.test.toString()) || !testCase.hidden);
     }
 
-    else {
-      // TODO: Get from problem
-      serverProblemSubmission.game = Game.HighLow;
+    else if (isOpenEndedProblem(problem)) {
+      serverProblemSubmission.game = problem.game;
     }
 
     const process = spawn('docker', ['run', '-i', '--rm', '--cap-drop', 'ALL', '--net=none', 'coderunner']);
