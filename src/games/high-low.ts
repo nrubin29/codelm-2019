@@ -2,7 +2,6 @@ import Game from "./game";
 import {GameResult} from "./game.result";
 
 export class HighLow implements Game {
-  name = 'High Low';
   answer: number;
   guesses: number;
 
