@@ -18,10 +18,7 @@ export class StandingsComponent implements OnInit {
   ngOnInit() {
     this.teamService.team.subscribe(team => {
       this.team = team;
-
-      this.settingsService.getSettings().then(settings => {
-        this.link = '/files/' + settings.state.toString().toLowerCase() + '/' + team.division._id + '.zip';
-      });
+      this.link = '/api/files/startercode/' + team.division._id;
     });
   }
 }

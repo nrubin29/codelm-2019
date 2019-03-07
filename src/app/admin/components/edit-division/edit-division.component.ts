@@ -1,9 +1,10 @@
-import { Component, Inject, OnInit } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
-import { EditProblemComponent } from '../edit-problem/edit-problem.component';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
-import { DivisionModel, DivisionType } from '../../../../../../common/src/models/division.model';
-import { DivisionService } from '../../../services/division.service';
+import {Component, Inject, OnInit} from '@angular/core';
+import {FormArray, FormControl, FormGroup} from '@angular/forms';
+import {EditProblemComponent} from '../edit-problem/edit-problem.component';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
+import {DivisionModel, DivisionType, StarterCode} from '../../../../../../common/src/models/division.model';
+import {DivisionService} from '../../../services/division.service';
+import {SettingsState} from "../../../../../../common/src/models/settings.model";
 
 @Component({
   selector: 'app-edit-division',
@@ -13,35 +14,59 @@ import { DivisionService } from '../../../services/division.service';
 export class EditDivisionComponent implements OnInit {
   division: DivisionModel;
 
+  starterCode: FormArray;
   formGroup: FormGroup;
-  graded: File;
-  upload: File;
 
   constructor(private divisionService: DivisionService, private dialogRef: MatDialogRef<EditProblemComponent>, @Inject(MAT_DIALOG_DATA) private data: {division: DivisionModel}) { }
 
   ngOnInit() {
-    this.division = this.data.division ? this.data.division : {_id: undefined, name: undefined, type: undefined};
+    this.division = this.data.division ? this.data.division : {_id: undefined, name: undefined, type: undefined, starterCode: []};
+
+    this.starterCode = new FormArray(this.division.starterCode.map(sc => this.createStarterCodeGroup(sc)));
 
     this.formGroup = new FormGroup({
       _id: new FormControl(this.division._id),
       name: new FormControl(this.division.name),
-      type: new FormControl(this.division.type)
+      type: new FormControl(this.division.type),
+      starterCode: this.starterCode
     });
   }
 
-  handleGradedFile(files: FileList) {
-    this.graded = files[0];
-  }
-
-  handleUploadFile(files: FileList) {
-    this.upload = files[0];
+  handleFile(files: FileList, i: number) {
+    this.starterCode.at(i).get('file').setValue(files[0]);
   }
 
   get formValue() {
-    return Object.assign({graded: this.graded, upload: this.upload}, this.formGroup.getRawValue());
+    return this.formGroup.getRawValue();
+  }
+
+  private createStarterCodeGroup(starterCode?: StarterCode): FormGroup {
+    if (!starterCode) {
+      starterCode = {
+        state: undefined,
+        file: undefined
+      };
+    }
+
+    return new FormGroup({
+      state: new FormControl(starterCode.state ? starterCode.state : ''),
+      file: new FormControl(starterCode.file ? 'file' : undefined),
+    });
+  }
+
+  addStarterCode(starterCode?: StarterCode) {
+    this.starterCode.push(this.createStarterCodeGroup(starterCode));
+  }
+
+  deleteStarterCode(index: number) {
+    this.starterCode.removeAt(index);
   }
 
   get types(): DivisionType[] {
     return Object.keys(DivisionType).map(key => DivisionType[key]);
+  }
+
+  get states(): SettingsState[] {
+    return Object.keys(SettingsState).map(key => SettingsState[key]);
   }
 }
