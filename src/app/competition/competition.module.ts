@@ -7,6 +7,7 @@ import { SubmitComponent } from './views/submit/submit.component';
 import { SharedModule } from '../shared.module';
 import { CompetitionRoutingModule } from './competition.routing';
 import { HighlowComponent } from './views/highlow/highlow.component';
+import { TimesweeperComponent } from './views/timesweeper/timesweeper.component';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { HighlowComponent } from './views/highlow/highlow.component';
     ProblemComponent,
     StandingsComponent,
     SubmitComponent,
-    HighlowComponent
+    HighlowComponent,
+    TimesweeperComponent
   ],
   imports: [
     SharedModule,

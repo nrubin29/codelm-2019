@@ -14,6 +14,7 @@ import { SubmissionResolve } from '../resolves/submission.resolve';
 import { NgModule } from '@angular/core';
 import { SubmittingGuard } from '../guards/submitting.guard';
 import {HighlowComponent} from "./views/highlow/highlow.component";
+import {TimesweeperComponent} from "./views/timesweeper/timesweeper.component";
 
 const routes: Routes = [
   {
@@ -24,7 +25,8 @@ const routes: Routes = [
         {path: 'submit', component: SubmitComponent, canActivate: [SubmittingGuard], canDeactivate: [SubmittingGuard]},
         {path: 'submission/:id', component: SubmissionComponent, resolve: {submission: SubmissionResolve}},
         {path: 'game', children: [
-          {path: 'highlow', component: HighlowComponent}
+          {path: 'highlow', component: HighlowComponent},
+          {path: 'timesweeper', component: TimesweeperComponent}
         ]}
       ]
   }
