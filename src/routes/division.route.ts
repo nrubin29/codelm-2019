@@ -3,65 +3,62 @@ import { DivisionDao } from '../daos/division.dao';
 import { DivisionModel, DivisionType } from '../../../common/src/models/division.model';
 import { PermissionsUtil } from '../permissions.util';
 import { FileArray, UploadedFile } from 'express-fileupload';
+import {SettingsState} from "../../../common/src/models/settings.model";
 
 const router = Router();
 
 router.get('/', PermissionsUtil.requestAdmin, async (req: Request, res: Response) => {
+  let divisions: DivisionModel[];
+
   if (req.params.admin) {
-    res.json(await DivisionDao.getDivisions());
+    divisions = await DivisionDao.getDivisions();
+    // TODO: Only send the starterCode field when necessary.
   }
 
   else {
-    res.json(await DivisionDao.getDivisionsOfType(DivisionType.Preliminaries));
+    divisions = await DivisionDao.getDivisionsOfType(DivisionType.Preliminaries);
+    divisions.forEach(division => delete division.starterCode);
   }
+  res.json(divisions);
 });
 
 router.put('/', PermissionsUtil.requireAdmin, PermissionsUtil.requireSuperUser, async (req: Request & {files?: FileArray}, res: Response) => {
-  const division = await DivisionDao.addOrUpdateDivision(req.body as DivisionModel);
+  const division: DivisionModel & {'states[]': string[]} = req.body;
 
-  if (req.files) {
-    const handle = (file: UploadedFile, type: string) => {
-      return new Promise<void>((resolve, reject) => {
-        file.mv(`./files/files/${type}/${division._id}.zip`, err => {
-          if (err) {
-            reject(err);
-          }
-
-          else {
-            resolve();
-          }
-        });
-      });
-    };
-
-    if (req.files['gradedStarterCode']) {
-      try {
-        await handle(<UploadedFile>req.files['gradedStarterCode'], 'graded');
-      }
-
-      catch (err) {
-        res.json(err);
-        return;
-      }
-    }
-
-    if (req.files['uploadStarterCode']) {
-      try {
-        await handle(<UploadedFile>req.files['uploadStarterCode'], 'upload');
-      }
-
-      catch (err) {
-        res.json(err);
-        return;
-      }
-    }
-
-    res.json(division);
+  if (!division['states[]']) {
+    division['states[]'] = [];
   }
 
-  else {
-    res.json(division);
+  if (typeof division['states[]'] as any === 'string') {
+    division['states[]'] = [division['states[]'] as any];
   }
+
+  if (!division.starterCode) {
+    division.starterCode = [];
+  }
+
+  if (!req.files) {
+    req.files = {};
+  }
+
+  for (let state of Object.keys(req.files)) {
+    division.starterCode.push({state: SettingsState[state], file: (req.files[state] as UploadedFile).data});
+  }
+
+  if (division._id) {
+    const oldDivision = await DivisionDao.getDivision(division._id);
+
+    // We want to keep all previously uploaded files that...
+    division.starterCode = division.starterCode.concat(oldDivision.starterCode.filter(oldSC =>
+      !Object.keys(req.files).includes(oldSC.state.toString()) && // we aren't trying to overwrite, and
+      division['states[]'].includes(oldSC.state.toString()) // we aren't trying to delete.
+    ));
+  }
+
+  delete division['states[]'];
+
+  const updatedDivision = await DivisionDao.addOrUpdateDivision(division);
+  res.json(updatedDivision);
 });
 
 router.delete('/:id', PermissionsUtil.requireAdmin, PermissionsUtil.requireSuperUser, async (req: Request, res: Response) => {

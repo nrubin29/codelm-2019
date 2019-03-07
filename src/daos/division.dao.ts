@@ -3,10 +3,16 @@ import { DivisionModel, DivisionType } from '../../../common/src/models/division
 
 type DivisionDocumentType = DivisionModel & mongoose.Document;
 
+const StarterCode = new mongoose.Schema({
+  state: String,
+  file: Buffer
+});
+
 const DivisionSchema = new mongoose.Schema({
   id: Number,
   name: String,
-  type: {type: String, default: DivisionType.Competition}
+  type: {type: String, default: DivisionType.Competition},
+  starterCode: [StarterCode]
 });
 
 const Division = mongoose.model<DivisionDocumentType>('Division', DivisionSchema);
