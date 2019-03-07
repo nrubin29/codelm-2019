@@ -1,3 +1,4 @@
 export enum Game {
-    HighLow = 'High Low'
+    HighLow = 'High Low',
+    Timesweeper = 'Timesweeper'
 }
