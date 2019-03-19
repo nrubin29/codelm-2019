@@ -11,9 +11,10 @@ import './daos/dao';
 import apiRoutes from './routes/route';
 
 const app = express();
+app.set('trust proxy', true);
 const expressWs = require('express-ws')(app);
 
-app.use(morgan('dev'));
+app.use(morgan('[:date[clf]] :method :url :status :response-time ms :remote-addr'));
 app.use(bodyParser.urlencoded({extended: true})); // parse application/x-www-form-urlencoded
 app.use(bodyParser.json()); // parse application/json
 app.use(bodyParser.json({type: 'application/vnd.api+json'})); // Parse application/vnd.api+json as json

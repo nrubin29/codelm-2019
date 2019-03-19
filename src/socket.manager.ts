@@ -23,6 +23,7 @@ import {SubmissionCompletedPacket} from "../../common/src/packets/submission.com
 import {GamePacket} from "../../common/src/packets/game.packet";
 import * as WebSocket from 'ws';
 import {Express} from "express";
+import {WithWebsocketMethod} from "express-ws";
 
 export class SocketManager {
   private static _instance: SocketManager;
@@ -64,10 +65,10 @@ export class SocketManager {
 
     setInterval(() => {
       // This is apparently necessary to stop the random disconnecting.
-      this.sockets.forEach(socket => this.emitToSocket(new Packet('ping'), socket));
+      this.sockets.forEach(socket => socket.ping());
     }, 15 * 1000);
 
-    (app as any).ws('/', socket => {
+    (app as any as WithWebsocketMethod).ws('/', socket => {
       let _id: string;
 
       socket.onmessage = (data) => {
@@ -87,11 +88,11 @@ export class SocketManager {
       socket.on('register', packet => this.onRegisterPacket(packet as RegisterPacket, socket).then(__id => _id = __id).catch(() => {}));
       socket.on('submission', packet => this.onSubmissionPacket(packet as SubmissionPacket, socket).catch(() => {}));
 
-      socket.once('disconnect', () => {
+      socket.onclose = () => {
         if (_id) {
           this.sockets.delete(_id);
         }
-      });
+      };
     });
   }
 
@@ -104,7 +105,7 @@ export class SocketManager {
 
           if (response === LoginResponse.SuccessTeam) {
             this.sockets.set(team._id.toString(), socket);
-            resolve(team._id);
+            resolve(team._id.toString());
           }
 
           else {
@@ -117,7 +118,7 @@ export class SocketManager {
           AdminDao.login(loginPacket.username, loginPacket.password).then(admin => {
             this.sockets.set(admin._id.toString(), socket);
             this.emitToSocket(new LoginResponsePacket(LoginResponse.SuccessAdmin, undefined, admin), socket);
-            resolve(admin._id);
+            resolve(admin._id.toString());
           }).catch((response: LoginResponse | Error) => {
             if ((response as any).stack !== undefined) {
               console.error(response);

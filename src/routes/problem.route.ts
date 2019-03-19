@@ -1,23 +1,10 @@
 import { Request, Response, Router } from 'express';
 import { ProblemDao, sanitizeProblem } from '../daos/problem.dao';
-import {
-  ClientProblemSubmission,
-  ServerProblemSubmission
-} from '../../../common/src/problem-submission';
-import { isGradedProblem, ProblemModel, ProblemType } from '../../../common/src/models/problem.model';
-import { isFalse, SubmissionDao } from '../daos/submission.dao';
+import { ProblemModel, ProblemType } from '../../../common/src/models/problem.model';
 import { PermissionsUtil } from '../permissions.util';
-import {
-  GradedSubmissionModel,
-  SubmissionModel,
-  TestCaseSubmissionModel,
-  UploadSubmissionModel
-} from '../../../common/src/models/submission.model';
-import {execFile, spawn} from 'child_process';
 import { SettingsDao } from '../daos/settings.dao';
 import { SettingsState } from '../../../common/src/models/settings.model';
-import {Game} from "../../../common/src/models/game.model";
-import {GameResult} from "../../../coderunner/src/games/game.result";
+import {DivisionType} from "../../../common/src/models/division.model";
 
 const router = Router();
 
@@ -47,12 +34,14 @@ router.get('/division/:id', PermissionsUtil.requireAuth, async (req: Request, re
   if (!req.params.admin) {
     problems = problems.filter(problem => problem.divisions.findIndex(pD => pD.division._id.toString() === req.params.team.division._id.toString()) !== -1);
 
-    if (settings.state === SettingsState.Graded) {
-      problems = problems.filter(problem => settings.state === SettingsState.Graded && problem.type === ProblemType.Graded);
-    }
+    if (req.params.team.division.type !== DivisionType.Special) {
+      if (settings.state === SettingsState.Graded) {
+        problems = problems.filter(problem => settings.state === SettingsState.Graded && problem.type === ProblemType.Graded);
+      }
 
-    else if (settings.state === SettingsState.Upload) {
-      problems = problems.filter(problem => settings.state === SettingsState.Upload && problem.type === ProblemType.OpenEnded);
+      else if (settings.state === SettingsState.Upload) {
+        problems = problems.filter(problem => settings.state === SettingsState.Upload && problem.type === ProblemType.OpenEnded);
+      }
     }
 
     problems.forEach(problem => sanitizeProblem(problem));
