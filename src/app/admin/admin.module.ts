@@ -12,11 +12,11 @@ import { DivisionsComponent } from './views/divisions/divisions.component';
 import { ProblemsComponent } from './views/problems/problems.component';
 import { SettingsComponent } from './views/settings/settings.component';
 import { TeamComponent } from './views/team/team.component';
-import { FroalaEditorModule, FroalaViewModule } from 'angular-froala-wysiwyg';
 import { SharedModule } from '../shared.module';
 import { EditGradedProblemComponent } from './components/edit-graded-problem/edit-graded-problem.component';
 import { AdminRoutingModule } from './admin.routing';
 import { EditOpenEndedProblemComponent } from './components/edit-open-ended-problem/edit-open-ended-problem.component';
+import {AngularEditorModule} from "@kolkov/angular-editor";
 
 @NgModule({
   declarations: [
@@ -39,8 +39,7 @@ import { EditOpenEndedProblemComponent } from './components/edit-open-ended-prob
   imports: [
     SharedModule,
     AdminRoutingModule,
-    FroalaEditorModule.forRoot(),
-    FroalaViewModule.forRoot(),
+    AngularEditorModule
   ],
   entryComponents: [
     EditProblemComponent,

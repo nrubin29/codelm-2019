@@ -1,6 +1,4 @@
-import { Injectable } from '@angular/core';
-import * as io from 'socket.io-client';
-import { Observable } from 'rxjs';
+import {Injectable} from '@angular/core';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { Packet } from '../../../../common/src/packets/packet';
@@ -9,41 +7,52 @@ import { Packet } from '../../../../common/src/packets/packet';
   providedIn: 'root'
 })
 export class SocketService {
-  private socket: SocketIOClient.Socket;
+  private socket: WebSocket;
+  private events: Map<string, ((Packet) => void)[]>;
+  private eventsOnce: Map<string, ((Packet) => void)[]>;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router) {
+    this.events = new Map<string, ((Packet) => void)[]>();
+    this.eventsOnce = new Map<string, ((Packet) => void)[]>();
+  }
 
   connect(): Promise<void> {
-    this.socket = io(location.protocol + '//' + location.hostname + environment.socketSuffix);
+    this.socket = new WebSocket(environment.wsProtocol + '://' + location.hostname + environment.socketSuffix);
+
+    this.socket.onmessage = (data) => {
+
+      const packet: Packet = JSON.parse(data.data);
+      (this.events[packet.name] || []).map(fn => fn(packet));
+      (this.eventsOnce[packet.name] || []).map(fn => fn(packet));
+      this.eventsOnce[packet.name] = [];
+    };
 
     return new Promise<void>((resolve, reject) => {
-      this.socket.on('connect', () => {
-        resolve();
-      });
+      this.socket.onopen = () => resolve();
     });
   }
 
   on<T extends Packet>(event: string, fn: (packet: T) => void) {
-    this.socket.on(event, fn);
+    this.events[event] = this.events.has(event) ? this.events[event].concat([fn]) : [fn];
   }
 
   once<T extends Packet>(event: string, fn: (packet: T) => void) {
-    this.socket.once(event, fn);
+    this.eventsOnce[event] = this.eventsOnce.has(event) ? this.eventsOnce[event].concat([fn]) : [fn];
   }
 
   off(event: string) {
-    this.socket.off(event);
+    this.events[event] = [];
+    this.eventsOnce[event] = [];
   }
 
   listenOnDisconnect() {
-    this.socket.on('disconnect', () => {
-      this.socket.close();
+    this.socket.onclose = () => {
       this.router.navigate(['/disconnected']);
-    });
+    };
   }
 
   isConnected(): boolean {
-    return this.socket && this.socket.connected;
+    return this.socket && this.socket.readyState === WebSocket.OPEN;
   }
 
   emit(packet: Packet) {
@@ -51,6 +60,6 @@ export class SocketService {
       throw new Error('Socket is not connected!');
     }
 
-    this.socket.emit(packet.name, packet);
+    this.socket.send(JSON.stringify(packet));
   }
 }

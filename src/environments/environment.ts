@@ -5,5 +5,6 @@
 
 export const environment = {
   production: false,
-  socketSuffix: ':4000'
+  socketSuffix: ':8080',
+  wsProtocol: 'ws'
 };

@@ -5,7 +5,6 @@ import { ProblemService } from '../../../services/problem.service';
 import { MatDrawerToggleResult, MatSidenav } from '@angular/material';
 import { TeamModel } from '../../../../../../common/src/models/team.model';
 import { SocketService } from '../../../services/socket.service';
-import { Packet } from '../../../../../../common/src/packets/packet';
 import { SubmissionUtil } from '../../../../../../common/src/utils/submission.util';
 import { SubmissionModel } from '../../../../../../common/src/models/submission.model';
 import { SubmissionService } from '../../../services/submission.service';

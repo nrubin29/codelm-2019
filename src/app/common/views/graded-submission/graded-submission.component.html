@@ -4,8 +4,11 @@
             <div class="flex display-side horizontal">
                 <h2>{{submission.result}}</h2>
                 <mat-chip-list>
-                    <mat-chip color="accent" selected="true">{{submission.points}}
-                        {{'WaveCoin'|pluralize:submission.points}}
+                    <mat-chip color="accent" selected="true" *ngIf="submission.test">
+                      Test
+                    </mat-chip>
+                    <mat-chip color="accent" selected="true" *ngIf="!submission.test">
+                      {{submission.points}} {{'WaveCoin'|pluralize:submission.points}}
                     </mat-chip>
                 </mat-chip-list>
             </div>

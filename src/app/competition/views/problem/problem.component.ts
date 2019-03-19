@@ -1,10 +1,9 @@
 import {AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChildren} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {
-  isGradedProblem, isOpenEndedProblem,
+  isGradedProblem,
   OpenEndedProblemModel,
-  ProblemModel,
-  ProblemType
+  ProblemModel
 } from '../../../../../../common/src/models/problem.model';
 import {ProblemService} from '../../../services/problem.service';
 import {SubmissionModel} from '../../../../../../common/src/models/submission.model';
@@ -63,6 +62,9 @@ export class ProblemComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    // TODO: For some reason, when there are two open-ended problems, switching between them directly reuses the component,
+    //  and so ngOnDestroy() and ngAfterViewInit() aren't called, and the code from the first problem stays in the second
+    //  problem's box and then it causes headaches.
     this.saveCode();
   }
 
