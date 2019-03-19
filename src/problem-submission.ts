@@ -1,6 +1,10 @@
 import {ProblemType, TestCaseModel} from './models/problem.model';
 import {Game} from "./models/game.model";
 
+export interface ClientReplayRequest {
+  _id: string;
+}
+
 export interface ClientProblemSubmission {
   problemId: string;
   language: string;

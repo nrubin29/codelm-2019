@@ -1,1 +1,0 @@
-export const VERSION = '03/06/2019 07:02:56 pm';
