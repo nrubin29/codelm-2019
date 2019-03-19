@@ -5,7 +5,6 @@ import {Game} from "../../common/src/models/game.model";
 import {HighLow} from "./games/high-low";
 import {languages} from "./language";
 import {CodeFile} from "./codefile";
-import {TimesweeperComponent} from "../../frontend/src/app/competition/views/timesweeper/timesweeper.component";
 import {Timesweeper} from "./games/timesweeper";
 
 process.on('uncaughtException', (e: Error) => {
