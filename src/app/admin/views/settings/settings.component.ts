@@ -27,6 +27,7 @@ export class SettingsComponent implements OnInit {
       this.formGroup = new FormGroup({
         state: new FormControl(this.settings.state),
         preliminaries: new FormControl(this.settings.preliminaries),
+        endSurveyLink: new FormControl(this.settings.endSurveyLink),
         schedule: this.schedule,
       });
     });

@@ -18,7 +18,7 @@ const routes: Routes = [
   {path: 'login', component: LoginComponent, canActivate: [EndGuard], resolve: {settings: SettingsResolve}},
   {path: 'register', component: RegisterComponent, canActivate: [EndGuard, OpenRegistrationGuard], resolve: {divisions: DivisionsResolve}},
   {path: 'disconnected', component: DisconnectedComponent, canActivate: [DisconnectGuard, EndGuard]},
-  {path: 'end', component: EndComponent, canActivate: [NotEndGuard]},
+  {path: 'end', component: EndComponent, canActivate: [NotEndGuard], resolve: {settings: SettingsResolve}},
 ];
 
 @NgModule({

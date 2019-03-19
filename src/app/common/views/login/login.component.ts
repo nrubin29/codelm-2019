@@ -25,7 +25,7 @@ export class LoginComponent implements OnInit {
 
     this.activatedRoute.data.subscribe(data => {
       this.settings = data['settings'];
-    })
+    });
   }
 
   login(form: NgForm) {
