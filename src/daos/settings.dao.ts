@@ -15,7 +15,8 @@ const ScheduleSchema = new mongoose.Schema({
 const SettingsSchema = new mongoose.Schema({
   state: {type: String, default: SettingsState.Closed},
   schedule: [ScheduleSchema],
-  preliminaries: {type: Boolean, default: false}
+  preliminaries: {type: Boolean, default: false},
+  endSurveyLink: {type: String, default: '#'}
 });
 
 const Settings = mongoose.model<SettingsType>('Settings', SettingsSchema);
