@@ -28,12 +28,16 @@ import { CardComponent } from './common/components/card/card.component';
 import { CodeMirrorComponent } from './common/components/code-mirror/code-mirror.component';
 import { GradedSubmissionComponent } from './common/views/graded-submission/graded-submission.component';
 import { UploadSubmissionComponent } from './common/views/upload-submission/upload-submission.component';
+import {HighlowComponent} from "./common/views/highlow/highlow.component";
+import {TimesweeperComponent} from "./common/views/timesweeper/timesweeper.component";
 
 @NgModule({
   declarations: [
     SubmissionComponent,
     GradedSubmissionComponent,
     UploadSubmissionComponent,
+    HighlowComponent,
+    TimesweeperComponent,
     CardComponent,
     CodeMirrorComponent,
     PluralizePipe

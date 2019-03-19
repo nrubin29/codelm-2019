@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { RestService } from './rest.service';
 import { ProblemModel } from '../../../../common/src/models/problem.model';
-import { TestCaseSubmissionModel } from '../../../../common/src/models/submission.model';
-import { ClientProblemSubmission } from '../../../../common/src/problem-submission';
-import {SocketService} from "./socket.service";
+import {
+  ClientProblemSubmission,
+  ClientReplayRequest
+} from '../../../../common/src/problem-submission';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,9 @@ export class ProblemService {
 
   // This holds a ClientProblemSubmission from problem.component and gives it to submit.component.
   private _problemSubmission: ClientProblemSubmission;
+
+  // This holds a ClientReplayRequest from submission.component and gives it to submit.component.
+  private _replayRequest: ClientReplayRequest;
 
   get problemSubmission() {
     const temp = this._problemSubmission;
@@ -26,6 +30,20 @@ export class ProblemService {
 
   set problemSubmission(value: ClientProblemSubmission) {
     this._problemSubmission = value;
+  }
+
+  get replayRequest() {
+    const temp = this._replayRequest;
+    this._replayRequest = undefined;
+    return temp;
+  }
+
+  get peekReplayRequest() {
+    return this._problemSubmission;
+  }
+
+  set replayRequest(value: ClientReplayRequest) {
+    this._replayRequest = value;
   }
 
   constructor(private restService: RestService) { }

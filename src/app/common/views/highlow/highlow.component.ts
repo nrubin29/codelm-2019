@@ -1,5 +1,5 @@
-import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import {DashboardComponent} from "../dashboard/dashboard.component";
+import {AfterViewInit, Component, ElementRef, OnInit, Optional, ViewChild} from '@angular/core';
+import {DashboardComponent} from "../../../competition/views/dashboard/dashboard.component";
 import {SubmissionStatusPacket} from "../../../../../../common/src/packets/submission.status.packet";
 import {SubmissionCompletedPacket} from "../../../../../../common/src/packets/submission.completed.packet";
 import {SubmissionPacket} from "../../../../../../common/src/packets/submission.packet";
@@ -10,6 +10,8 @@ import {TeamService} from "../../../services/team.service";
 import {GamePacket} from "../../../../../../common/src/packets/game.packet";
 import {MatTable} from "@angular/material";
 import {isPacket} from "../../../../../../common/src/packets/packet";
+import {ReplayPacket} from "../../../../../../common/src/packets/replay.packet";
+import {AdminComponent} from "../../../admin/views/admin/admin.component";
 
 @Component({
   selector: 'app-highlow',
@@ -27,20 +29,19 @@ export class HighlowComponent implements AfterViewInit {
   @ViewChild('htmlLog') htmlLog: ElementRef<HTMLDivElement>;
   @ViewChild(MatTable) table: MatTable<object>;
 
-  constructor(private dashboardComponent: DashboardComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
+  constructor(@Optional() private dashboardComponent: DashboardComponent, @Optional() private adminComponent: AdminComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
 
   ngAfterViewInit() {
-    this.dashboardComponent.toggle().then(() => {
+    this.toggle().then(() => {
       this.socketService.on<SubmissionStatusPacket>('submissionStatus', packet => {
         this.queue.push(packet);
       });
 
       this.socketService.on<GamePacket>('game', packet => {
-        // TODO: If there's an error, clear the queue before putting the packet on.
         // TODO: Show errors correctly.
         if (packet.data.hasOwnProperty('error')) {
           this.error = packet.data['error'];
-          this.queue = []; // TODO: Maybe this is a bad idea?
+          this.queue = [];
           return;
         }
 
@@ -48,12 +49,12 @@ export class HighlowComponent implements AfterViewInit {
           if (typeof packet.data['input'] == 'object') {
             if (packet.data['input'].hasOwnProperty('error')) {
               this.error = packet.data['input']['error'];
-              this.queue = []; // TODO: Maybe this is a bad idea?
+              this.queue = [];
               return;
             }
 
             else if (packet.data['input'].hasOwnProperty('score')) {
-              // TODO: Save score.
+              // TODO: Save score if not replay.
               packet.data['input'] = 'Correct';
             }
           }
@@ -80,7 +81,7 @@ export class HighlowComponent implements AfterViewInit {
             clearInterval(interval);
 
             // this.teamService.refreshTeam().then(() => {
-            this.dashboardComponent.toggle().then(() => {
+            this.toggle().then(() => {
               this.status = 'Finished';
               this._id = packet._id;
               // setTimeout(() => {
@@ -103,8 +104,25 @@ export class HighlowComponent implements AfterViewInit {
         }
       }, 500);
 
-      this.socketService.emit(new SubmissionPacket(this.problemService.problemSubmission, this.teamService.team.getValue(), VERSION));
+      if (this.problemService.peekProblemSubmission) {
+        this.socketService.emit(new SubmissionPacket(this.problemService.problemSubmission, this.teamService.team.getValue(), VERSION));
+      }
+
+      else {
+        this.socketService.emit(new ReplayPacket(this.problemService.replayRequest, this.teamService.team.getValue(), VERSION));
+      }
     });
   }
 
+  private toggle(): Promise<any> {
+    if (this.dashboardComponent) {
+      return this.dashboardComponent.toggle();
+    }
+
+    else if (this.adminComponent) {
+      return this.adminComponent.toggle();
+    }
+
+    return Promise.resolve();
+  }
 }

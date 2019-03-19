@@ -6,7 +6,7 @@ import { RegisterComponent } from './common/views/register/register.component';
 import { EndGuard } from './guards/end.guard';
 import { NotEndGuard } from './guards/not-end.guard';
 import { DisconnectGuard } from './guards/disconnect.guard';
-import { EndComponent } from './competition/views/end/end.component';
+import { EndComponent } from './common/views/end/end.component';
 import { DivisionsResolve } from './resolves/divisions.resolve';
 import { SettingsResolve } from './resolves/settings.resolve';
 import { OpenRegistrationGuard } from './guards/open-registration.guard';
@@ -18,7 +18,7 @@ const routes: Routes = [
   {path: 'login', component: LoginComponent, canActivate: [EndGuard], resolve: {settings: SettingsResolve}},
   {path: 'register', component: RegisterComponent, canActivate: [EndGuard, OpenRegistrationGuard], resolve: {divisions: DivisionsResolve}},
   {path: 'disconnected', component: DisconnectedComponent, canActivate: [DisconnectGuard, EndGuard]},
-  {path: 'end', component: EndComponent, canActivate: [NotEndGuard]}
+  {path: 'end', component: EndComponent, canActivate: [NotEndGuard]},
 ];
 
 @NgModule({

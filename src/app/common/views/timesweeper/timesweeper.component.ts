@@ -1,15 +1,17 @@
-import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnInit, Optional, ViewChild} from '@angular/core';
 import {SubmissionStatusPacket} from "../../../../../../common/src/packets/submission.status.packet";
 import {GamePacket} from "../../../../../../common/src/packets/game.packet";
 import {SubmissionCompletedPacket} from "../../../../../../common/src/packets/submission.completed.packet";
 import {MatTable} from "@angular/material";
-import {DashboardComponent} from "../dashboard/dashboard.component";
+import {DashboardComponent} from "../../../competition/views/dashboard/dashboard.component";
 import {ProblemService} from "../../../services/problem.service";
 import {TeamService} from "../../../services/team.service";
 import {SocketService} from "../../../services/socket.service";
 import {isPacket} from "../../../../../../common/src/packets/packet";
 import {SubmissionPacket} from "../../../../../../common/src/packets/submission.packet";
 import {VERSION} from "../../../../../../common/version";
+import {AdminComponent} from "../../../admin/views/admin/admin.component";
+import {ReplayPacket} from "../../../../../../common/src/packets/replay.packet";
 
 @Component({
   selector: 'app-timesweeper',
@@ -29,14 +31,14 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
   @ViewChild('board') board: ElementRef<HTMLTableSectionElement>;
   range: number[];
 
-  constructor(private dashboardComponent: DashboardComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
+  constructor(@Optional() private dashboardComponent: DashboardComponent, @Optional() private adminComponent: AdminComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
 
   ngOnInit() {
     this.range = new Array(10);
   }
 
   ngAfterViewInit() {
-    this.dashboardComponent.toggle().then(() => {
+    this.toggle().then(() => {
       this.socketService.on<SubmissionStatusPacket>('submissionStatus', packet => {
         this.queue.push(packet);
       });
@@ -82,7 +84,7 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
             clearInterval(interval);
 
             // this.teamService.refreshTeam().then(() => {
-            this.dashboardComponent.toggle().then(() => {
+            this.toggle().then(() => {
               this.status = 'Finished';
               this._id = packet._id;
               // setTimeout(() => {
@@ -128,7 +130,25 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
         }
       }, 500);
 
-      this.socketService.emit(new SubmissionPacket(this.problemService.problemSubmission, this.teamService.team.getValue(), VERSION));
+      if (this.problemService.peekProblemSubmission) {
+        this.socketService.emit(new SubmissionPacket(this.problemService.problemSubmission, this.teamService.team.getValue(), VERSION));
+      }
+
+      else {
+        this.socketService.emit(new ReplayPacket(this.problemService.replayRequest, this.teamService.team.getValue(), VERSION));
+      }
     });
+  }
+
+  private toggle(): Promise<any> {
+    if (this.dashboardComponent) {
+      return this.dashboardComponent.toggle();
+    }
+
+    else if (this.adminComponent) {
+      return this.adminComponent.toggle();
+    }
+
+    return Promise.resolve();
   }
 }

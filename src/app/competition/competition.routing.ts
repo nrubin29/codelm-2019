@@ -13,8 +13,8 @@ import { SubmissionComponent } from '../common/views/submission/submission.compo
 import { SubmissionResolve } from '../resolves/submission.resolve';
 import { NgModule } from '@angular/core';
 import { SubmittingGuard } from '../guards/submitting.guard';
-import {HighlowComponent} from "./views/highlow/highlow.component";
-import {TimesweeperComponent} from "./views/timesweeper/timesweeper.component";
+import {HighlowComponent} from "../common/views/highlow/highlow.component";
+import {TimesweeperComponent} from "../common/views/timesweeper/timesweeper.component";
 
 const routes: Routes = [
   {

@@ -6,8 +6,6 @@ import { StandingsComponent } from './views/standings/standings.component';
 import { SubmitComponent } from './views/submit/submit.component';
 import { SharedModule } from '../shared.module';
 import { CompetitionRoutingModule } from './competition.routing';
-import { HighlowComponent } from './views/highlow/highlow.component';
-import { TimesweeperComponent } from './views/timesweeper/timesweeper.component';
 
 @NgModule({
   declarations: [
@@ -15,9 +13,7 @@ import { TimesweeperComponent } from './views/timesweeper/timesweeper.component'
     DashboardComponent,
     ProblemComponent,
     StandingsComponent,
-    SubmitComponent,
-    HighlowComponent,
-    TimesweeperComponent
+    SubmitComponent
   ],
   imports: [
     SharedModule,

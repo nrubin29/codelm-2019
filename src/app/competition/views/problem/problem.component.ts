@@ -88,7 +88,7 @@ export class ProblemComponent implements OnInit, AfterViewInit, OnDestroy {
       language: this.language,
       code: this.codeMirrors.first.value,
       test: test
-    } as ClientProblemSubmission;
+    };
 
     if (!test || isGradedProblem(this.problem)) {
       this.router.navigate(['dashboard', 'submit']);

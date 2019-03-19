@@ -21,6 +21,8 @@ import { NgModule } from '@angular/core';
 import { SuperUserGuard } from '../guards/super-user.guard';
 import { DivisionsResolve } from '../resolves/divisions.resolve';
 import {AdminsResolve} from "../resolves/admins.resolve";
+import {HighlowComponent} from "../common/views/highlow/highlow.component";
+import {TimesweeperComponent} from "../common/views/timesweeper/timesweeper.component";
 
 const routes: Routes = [
   {
@@ -34,7 +36,11 @@ const routes: Routes = [
         {path: 'divisions', component: DivisionsComponent, canActivate: [SuperUserGuard], resolve: {divisions: DivisionsResolve}},
         {path: 'problems', component: ProblemsComponent, canActivate: [SuperUserGuard], resolve: {divisionsAndProblems: DivisionsProblemsResolve}},
         {path: 'admins', component: AdminsComponent, canActivate: [SuperUserGuard], resolve: {admins: AdminsResolve}},
-        {path: 'add-team', component: EditTeamComponent, resolve: {divisions: DivisionsResolve}}
+        {path: 'add-team', component: EditTeamComponent, resolve: {divisions: DivisionsResolve}},
+        {path: 'game', children: [
+            {path: 'highlow', component: HighlowComponent},
+            {path: 'timesweeper', component: TimesweeperComponent}
+          ]}
       ]
   }
 ];

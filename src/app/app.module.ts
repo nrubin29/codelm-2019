@@ -7,7 +7,7 @@ import { RegisterComponent } from './common/views/register/register.component';
 import { SharedModule } from './shared.module';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { EndComponent } from './competition/views/end/end.component';
+import { EndComponent } from './common/views/end/end.component';
 
 @NgModule({
   declarations: [

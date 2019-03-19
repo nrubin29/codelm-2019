@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import { AdminService } from '../../../services/admin.service';
 import { AdminModel } from '../../../../../../common/src/models/admin.model';
+import {MatDrawerToggleResult, MatSidenav} from "@angular/material";
 
 @Component({
   selector: 'app-admin',
@@ -10,11 +11,17 @@ import { AdminModel } from '../../../../../../common/src/models/admin.model';
 export class AdminComponent implements OnInit {
   admin: AdminModel;
 
+  @ViewChild(MatSidenav) private sideNav: MatSidenav;
+
   constructor(private adminService: AdminService) { }
 
   ngOnInit() {
     this.adminService.admin.subscribe(admin => {
       this.admin = admin;
     });
+  }
+
+  toggle(): Promise<MatDrawerToggleResult> {
+    return this.sideNav.toggle();
   }
 }
