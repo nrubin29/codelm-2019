@@ -10,7 +10,7 @@ import {isClientPacket} from '../../common/src/packets/client.packet';
 import {SubmissionPacket} from "../../common/src/packets/submission.packet";
 import {ServerProblemSubmission} from "../../common/src/problem-submission";
 import {ProblemDao} from "./daos/problem.dao";
-import {isGradedProblem, isOpenEndedProblem} from "../../common/src/models/problem.model";
+import {isGradedProblem, isOpenEndedProblem, ProblemModel} from "../../common/src/models/problem.model";
 import {isFalse, SubmissionDao} from "./daos/submission.dao";
 import {spawn} from "child_process";
 import {
@@ -24,6 +24,7 @@ import {GamePacket} from "../../common/src/packets/game.packet";
 import * as WebSocket from 'ws';
 import {Express} from "express";
 import {WithWebsocketMethod} from "express-ws";
+import {ReplayPacket} from "../../common/src/packets/replay.packet";
 
 export class SocketManager {
   private static _instance: SocketManager;
@@ -87,6 +88,7 @@ export class SocketManager {
       socket.on('login', packet => this.onLoginPacket(packet as LoginPacket, socket).then(__id => _id = __id).catch(() => {}));
       socket.on('register', packet => this.onRegisterPacket(packet as RegisterPacket, socket).then(__id => _id = __id).catch(() => {}));
       socket.on('submission', packet => this.onSubmissionPacket(packet as SubmissionPacket, socket).catch(() => {}));
+      socket.on('replay', packet => this.onReplayPacket(packet as ReplayPacket, socket).catch(() => {}));
 
       socket.onclose = () => {
         if (_id) {
@@ -204,93 +206,128 @@ export class SocketManager {
       serverProblemSubmission.game = problem.game;
     }
 
-    const process = spawn('docker', ['run', '-i', '--rm', '--cap-drop', 'ALL', '--net=none', 'coderunner']);
-    const testCases: TestCaseSubmissionModel[] = [];
-    const errors = [];
+    const {testCases, err} = await this.runSubmission(serverProblemSubmission, problem, socket);
+    let submission: SubmissionModel;
 
-    process.stdout.on('data',  (data: Buffer) => {
-      // Sometimes, two packets will be read at once. This ensures that they are treated separately.
-      for (let packet of data.toString().split(/(?<=})\n/g)) {
-        // Every packet ends with a \n, so the last element of the split will always be empty, and we want to skip it.
-        if (!packet) {
-          continue;
-        }
+    if (err) {
+      submission = await SubmissionDao.addSubmission({
+        type: isGradedProblem(problem) ? 'graded' : 'upload',
+        team: packet.team,
+        problem: problem,
+        language: problemSubmission.language,
+        code: problemSubmission.code,
+        error: err,
+        test: problemSubmission.test
+      } as GradedSubmissionModel);
+    }
 
-        const obj = JSON.parse(packet.trim());
-        console.log(obj);
+    else {
+      submission = await SubmissionDao.addSubmission({
+        type: isGradedProblem(problem) ? 'graded' : 'upload',
+        team: packet.team,
+        problem: problem,
+        language: problemSubmission.language,
+        code: problemSubmission.code,
+        testCases: testCases,
+        test: problemSubmission.test
+      } as GradedSubmissionModel);
+    }
 
-        if (obj.hasOwnProperty('error')) {
-          errors.push(obj['error']);
+    /*
+    // or
+    const submission = await SubmissionDao.addSubmission({
+      team: packet.team,
+      problem: problem,
+      score: (<GameResult>JSON.parse(lastData)).score
+    } as UploadSubmissionModel);
+    */
 
-          if (!isGradedProblem(problem)) {
+    this.emitToSocket(new SubmissionCompletedPacket(submission._id), socket);
+  }
+
+  async onReplayPacket(packet: ReplayPacket, socket: WebSocket) {
+    const submission = await SubmissionDao.getSubmission(packet.replayRequest._id);
+
+    const serverProblemSubmission: ServerProblemSubmission = {
+      problemTitle: submission.problem.title,
+      type: submission.problem.type,
+      language: submission.language,
+      code: submission.code
+    };
+
+    if (isGradedProblem(submission.problem)) {
+      serverProblemSubmission.testCases = submission.problem.testCases.filter(testCase => isFalse(submission.test.toString()) || !testCase.hidden);
+    }
+
+    else if (isOpenEndedProblem(submission.problem)) {
+      serverProblemSubmission.game = submission.problem.game;
+    }
+
+    await this.runSubmission(serverProblemSubmission, submission.problem, socket);
+    this.emitToSocket(new SubmissionCompletedPacket(submission._id), socket);
+  }
+
+  private runSubmission(serverProblemSubmission: ServerProblemSubmission, problem: ProblemModel, socket: WebSocket): Promise<{testCases: TestCaseSubmissionModel[], err: string}> {
+    return new Promise<{testCases: TestCaseSubmissionModel[], err: string}>(resolve => {
+      const process = spawn('docker', ['run', '-i', '--rm', '--cap-drop', 'ALL', '--net=none', 'coderunner']);
+      const testCases: TestCaseSubmissionModel[] = [];
+      const errors = [];
+
+      process.stdout.on('data',  (data: Buffer) => {
+        // Sometimes, two packets will be read at once. This ensures that they are treated separately.
+        for (let packet of data.toString().split(/(?<=})\n/g)) {
+          // Every packet ends with a \n, so the last element of the split will always be empty, and we want to skip it.
+          if (!packet) {
+            continue;
+          }
+
+          const obj = JSON.parse(packet.trim());
+          console.log(obj);
+
+          if (obj.hasOwnProperty('error')) {
+            errors.push(obj['error']);
+
+            if (!isGradedProblem(problem)) {
+              this.emitToSocket(new GamePacket(obj), socket);
+            }
+          }
+
+          else if (obj.hasOwnProperty('status')) {
+            this.emitToSocket(new SubmissionStatusPacket(obj['status']), socket);
+          }
+
+          else if (obj.hasOwnProperty('testCase')) {
+            testCases.push(obj['testCase']);
+            this.emitToSocket(new SubmissionStatusPacket('test case completed'), socket);
+          }
+
+          else if (isOpenEndedProblem(problem)) {
             this.emitToSocket(new GamePacket(obj), socket);
           }
+
+          else {
+            throw new Error('Unknown object from container: ' + JSON.stringify(obj));
+          }
+        }
+      });
+
+      // TODO: What if an error occurs in the middle of running?
+      process.stderr.on('data', (data: Buffer) => {
+        throw new Error(data.toString());
+      });
+
+      process.on('exit', async () => {
+        let err = undefined;
+
+        if (errors.length > 0) {
+          err = errors.join('\n');
         }
 
-        else if (obj.hasOwnProperty('status')) {
-          this.emitToSocket(new SubmissionStatusPacket(obj['status']), socket);
-        }
+        resolve({testCases, err});
+      });
 
-        else if (obj.hasOwnProperty('testCase')) {
-          testCases.push(obj['testCase']);
-          this.emitToSocket(new SubmissionStatusPacket('test case completed'), socket);
-        }
-
-        else if (isOpenEndedProblem(problem)) {
-          this.emitToSocket(new GamePacket(obj), socket);
-        }
-
-        else {
-          throw new Error('Unknown object from container: ' + JSON.stringify(obj));
-        }
-      }
+      process.stdin.write(JSON.stringify(serverProblemSubmission) + '\n');
+      process.stdin.end();
     });
-
-    // TODO: What if an error occurs in the middle of running?
-    process.stderr.on('data', (data: Buffer) => {
-      throw new Error(data.toString());
-    });
-
-    process.on('exit', async () => {
-      let submission: SubmissionModel;
-
-      if (errors.length > 0) {
-        const err = errors.join('\n');
-
-        submission = await SubmissionDao.addSubmission({
-          type: isGradedProblem(problem) ? 'graded' : 'upload',
-          team: packet.team,
-          problem: problem,
-          language: problemSubmission.language,
-          code: problemSubmission.code,
-          error: err,
-          test: problemSubmission.test
-        } as GradedSubmissionModel);
-      } else {
-        submission = await SubmissionDao.addSubmission({
-          type: isGradedProblem(problem) ? 'graded' : 'upload',
-          team: packet.team,
-          problem: problem,
-          language: problemSubmission.language,
-          code: problemSubmission.code,
-          testCases: testCases,
-          test: problemSubmission.test
-        } as GradedSubmissionModel);
-      }
-
-      this.emitToSocket(new SubmissionCompletedPacket(submission._id), socket);
-
-      /*
-      // or
-      const submission = await SubmissionDao.addSubmission({
-          team: packet.team,
-          problem: problem,
-          score: (<GameResult>JSON.parse(lastData)).score
-        } as UploadSubmissionModel);
-       */
-    });
-
-    process.stdin.write(JSON.stringify(serverProblemSubmission) + '\n');
-    process.stdin.end();
   }
 }
