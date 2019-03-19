@@ -17,9 +17,9 @@
             sites_available
                 codelm
             sites_enabled
-                codelm (symlink, ln -s)
+                codelm (symlink via ln -s)
     
-    home
+    root
         codelm
             ecosystem.config.js
             update.sh

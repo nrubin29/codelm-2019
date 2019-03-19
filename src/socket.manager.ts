@@ -7,7 +7,6 @@ import {PermissionsUtil} from './permissions.util';
 import {LoginResponse, LoginResponsePacket} from '../../common/src/packets/login.response.packet';
 import {VERSION} from '../../common/version';
 import {isClientPacket} from '../../common/src/packets/client.packet';
-import {Server, Socket} from "socket.io";
 import {SubmissionPacket} from "../../common/src/packets/submission.packet";
 import {ServerProblemSubmission} from "../../common/src/problem-submission";
 import {ProblemDao} from "./daos/problem.dao";
@@ -19,15 +18,16 @@ import {
   SubmissionModel,
   TestCaseSubmissionModel
 } from "../../common/src/models/submission.model";
-import {Game} from "../../common/src/models/game.model";
 import {SubmissionStatusPacket} from "../../common/src/packets/submission.status.packet";
 import {SubmissionCompletedPacket} from "../../common/src/packets/submission.completed.packet";
 import {GamePacket} from "../../common/src/packets/game.packet";
+import * as WebSocket from 'ws';
+import {Express} from "express";
 
 export class SocketManager {
   private static _instance: SocketManager;
 
-  private sockets: Map<string, Socket>;
+  private sockets: Map<string, WebSocket>;
 
   static get instance(): SocketManager {
     if (!SocketManager._instance) {
@@ -37,12 +37,12 @@ export class SocketManager {
     return SocketManager._instance;
   }
 
-  public static init(server: Server) {
+  public static init(app: Express) {
     if (SocketManager._instance) {
       throw new Error('SocketManager has already been initialized.');
     }
 
-    SocketManager._instance = new SocketManager(server);
+    SocketManager._instance = new SocketManager(app);
   }
 
   public emit(userId: string, packet: Packet) {
@@ -51,36 +51,41 @@ export class SocketManager {
     }
   }
 
-  public emitToSocket(packet: Packet, socket: Socket) {
-    socket.emit(packet.name, packet);
+  public emitToSocket(packet: Packet, socket: WebSocket) {
+    socket.send(JSON.stringify(packet));
   }
 
   public emitToAll(packet: Packet) {
     this.sockets.forEach(socket => this.emitToSocket(packet, socket));
   }
 
-  protected constructor(private server: Server) {
-    this.sockets = new Map<string, Socket>();
+  protected constructor(app: Express) {
+    this.sockets = new Map<string, WebSocket>();
 
-    server.on('connection', socket => {
+    setInterval(() => {
+      // This is apparently necessary to stop the random disconnecting.
+      this.sockets.forEach(socket => this.emitToSocket(new Packet('ping'), socket));
+    }, 15 * 1000);
+
+    (app as any).ws('/', socket => {
       let _id: string;
 
-      socket.use((pkt, next) => {
-        const packet = pkt[1];
+      socket.onmessage = (data) => {
+        const packet = JSON.parse(<string>data.data);
 
         if (isClientPacket(packet) && packet.version !== VERSION) {
           this.emitToSocket(new LoginResponsePacket(LoginResponse.OutdatedClient), socket);
-          socket.disconnect(true);
+          socket.close();
         }
 
         else {
-          next();
+          socket.listeners(packet.name).map(listener => listener(packet));
         }
-      });
+      };
 
-      socket.on('login', packet => this.onLoginPacket(packet as LoginPacket, socket).then(__id => _id = __id));
-      socket.on('register', packet => this.onRegisterPacket(packet as RegisterPacket, socket).then(__id => _id = __id));
-      socket.on('submission', packet => this.onSubmissionPacket(packet as SubmissionPacket, socket));
+      socket.on('login', packet => this.onLoginPacket(packet as LoginPacket, socket).then(__id => _id = __id).catch(() => {}));
+      socket.on('register', packet => this.onRegisterPacket(packet as RegisterPacket, socket).then(__id => _id = __id).catch(() => {}));
+      socket.on('submission', packet => this.onSubmissionPacket(packet as SubmissionPacket, socket).catch(() => {}));
 
       socket.once('disconnect', () => {
         if (_id) {
@@ -90,7 +95,7 @@ export class SocketManager {
     });
   }
 
-  onLoginPacket(loginPacket: LoginPacket, socket: Socket): Promise<string> {
+  onLoginPacket(loginPacket: LoginPacket, socket: WebSocket): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       TeamDao.login(loginPacket.username, loginPacket.password).then(team => {
         PermissionsUtil.hasAccess(team).then(access => {
@@ -103,7 +108,7 @@ export class SocketManager {
           }
 
           else {
-            socket.disconnect(true);
+            socket.close();
             reject();
           }
         });
@@ -123,7 +128,7 @@ export class SocketManager {
               this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
             }
 
-            socket.disconnect(true);
+            socket.close();
             reject();
           });
         }
@@ -138,14 +143,14 @@ export class SocketManager {
             this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
           }
 
-          socket.disconnect(true);
+          socket.close();
           reject();
         }
       });
     });
   }
 
-  onRegisterPacket(packet: RegisterPacket, socket: Socket): Promise<string> {
+  onRegisterPacket(packet: RegisterPacket, socket: WebSocket): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       const registerPacket = packet as RegisterPacket;
       PermissionsUtil.canRegister().then(canRegister => {
@@ -164,14 +169,14 @@ export class SocketManager {
               this.emitToSocket(new LoginResponsePacket(response as LoginResponse), socket);
             }
 
-            socket.disconnect(true);
+            socket.close();
             reject();
           });
         }
 
         else {
           this.emitToSocket(new LoginResponsePacket(LoginResponse.Closed), socket);
-          socket.disconnect(true);
+          socket.close();
           reject();
         }
       });
@@ -179,7 +184,7 @@ export class SocketManager {
   }
 
   // TODO: Ensure that submissions are open (use PermissionsUtil).
-  async onSubmissionPacket(packet: SubmissionPacket, socket: Socket) {
+  async onSubmissionPacket(packet: SubmissionPacket, socket: WebSocket) {
     const problemSubmission = packet.submission;
     const problem = await ProblemDao.getProblem(problemSubmission.problemId);
 
