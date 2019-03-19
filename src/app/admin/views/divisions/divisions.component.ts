@@ -26,7 +26,8 @@ export class DivisionsComponent implements OnInit {
     const ref = this.dialog.open(EditDivisionComponent, {
       data: {
         division: division
-      }
+      },
+      disableClose: true
     });
 
     ref.afterClosed().subscribe((r?: [DialogResult, any]) => {

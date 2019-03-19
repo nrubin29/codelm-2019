@@ -51,9 +51,13 @@ export class CountdownComponent implements OnInit {
       clearInterval(this.interval);
     }
 
-    this.end = moment(this.settings.schedule.filter(schedule => moment().isBefore(moment(schedule.when))).sort(schedule => moment(schedule.when).unix())[0].when);
+    const schedule = this.settings.schedule.filter(schedule => moment().isBefore(moment(schedule.when))).sort(schedule => moment(schedule.when).unix());
 
     const tick = () => {
+      if (!this.end) {
+        return;
+      }
+
       if (moment().isAfter(this.end)) {
         clearInterval(this.interval);
         this.countdown = '00:00:00';
@@ -68,8 +72,12 @@ export class CountdownComponent implements OnInit {
       }
     };
 
-    tick();
-    this.interval = setInterval(tick, 500);
+    if (schedule.length > 0) {
+      this.end = moment(schedule[0].when);
+
+      tick();
+      this.interval = setInterval(tick, 500);
+    }
   }
 
   private pad(x: number, size: number = 2) {

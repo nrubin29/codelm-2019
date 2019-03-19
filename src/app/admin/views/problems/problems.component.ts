@@ -32,7 +32,8 @@ export class ProblemsComponent implements OnInit {
       data: {
         problem: problem,
         divisions: this.divisions
-      }
+      },
+      disableClose: true
     });
 
     ref.afterClosed().subscribe((r?: [DialogResult, any]) => {

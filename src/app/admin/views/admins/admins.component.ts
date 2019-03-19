@@ -26,7 +26,8 @@ export class AdminsComponent implements OnInit {
     const ref = this.dialog.open(EditAdminComponent, {
       data: {
         admin: admin
-      }
+      },
+      disableClose: true
     });
 
     ref.afterClosed().subscribe((r?: [DialogResult, any]) => {

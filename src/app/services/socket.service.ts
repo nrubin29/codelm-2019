@@ -20,7 +20,6 @@ export class SocketService {
     this.socket = new WebSocket(environment.wsProtocol + '://' + location.hostname + environment.socketSuffix);
 
     this.socket.onmessage = (data) => {
-
       const packet: Packet = JSON.parse(data.data);
       (this.events[packet.name] || []).map(fn => fn(packet));
       (this.eventsOnce[packet.name] || []).map(fn => fn(packet));
