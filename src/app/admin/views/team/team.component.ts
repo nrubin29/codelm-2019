@@ -17,6 +17,8 @@ export class TeamComponent implements OnInit {
   problems: ProblemModel[] = [];
   problemSubmissions: {[problemId: string]: SubmissionModel[]} = {};
 
+  // TODO: Change/reset password
+
   constructor(private teamService: TeamService, private problemService: ProblemService, private activatedRoute: ActivatedRoute) { }
 
   ngOnInit() {

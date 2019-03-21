@@ -5,8 +5,6 @@
 </mat-toolbar>
 <mat-tab-group>
   <mat-tab *ngFor="let division of divisions" [label]="division.name">
-    <div class="container">
-      <app-leaderboard [division]="division"></app-leaderboard>
-    </div>
+    <app-leaderboard [division]="division"></app-leaderboard>
   </mat-tab>
 </mat-tab-group>

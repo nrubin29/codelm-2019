@@ -17,6 +17,7 @@ import { EditGradedProblemComponent } from './components/edit-graded-problem/edi
 import { AdminRoutingModule } from './admin.routing';
 import { EditOpenEndedProblemComponent } from './components/edit-open-ended-problem/edit-open-ended-problem.component';
 import {AngularEditorModule} from "@kolkov/angular-editor";
+import { ViewSubmissionsComponent } from './components/view-submissions/view-submissions.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import {AngularEditorModule} from "@kolkov/angular-editor";
     SettingsComponent,
     TeamComponent,
     EditGradedProblemComponent,
-    EditOpenEndedProblemComponent
+    EditOpenEndedProblemComponent,
+    ViewSubmissionsComponent
   ],
   imports: [
     SharedModule,
@@ -44,7 +46,8 @@ import {AngularEditorModule} from "@kolkov/angular-editor";
   entryComponents: [
     EditProblemComponent,
     EditDivisionComponent,
-    EditAdminComponent
+    EditAdminComponent,
+    ViewSubmissionsComponent
   ],
 })
 export class AdminModule { }

@@ -32,6 +32,7 @@
       </mat-table>
     </div>
   </app-card>
+  <!-- TODO: Maybe use the same view as the standings page? -->
   <app-card title="Submissions">
     <mat-accordion>
       <mat-expansion-panel *ngFor="let problem of problems; let i = index">
@@ -41,7 +42,7 @@
             {{'submission'|pluralize:problemSubmissions[problem._id].length}}
           </mat-panel-description>
         </mat-expansion-panel-header>
-        <!-- TODO: Don't have result and test columns if problem is upload-style. -->
+        <!-- TODO: Don't have result column if problem is upload-style. -->
         <mat-table *ngIf="problemSubmissions[problem._id].length > 0" [dataSource]="problemSubmissions[problem._id]">
           <ng-container matColumnDef="result">
             <mat-header-cell *matHeaderCellDef>Result</mat-header-cell>
