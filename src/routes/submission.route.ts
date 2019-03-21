@@ -1,13 +1,18 @@
 import { Router, Request, Response } from 'express';
 import { sanitizeSubmission, SubmissionDao } from '../daos/submission.dao';
 import { PermissionsUtil } from '../permissions.util';
-import { isUploadSubmission, SubmissionModel } from '../../../common/src/models/submission.model';
+import { SubmissionModel } from '../../../common/src/models/submission.model';
 
 const router = Router();
 
 router.get('/', PermissionsUtil.requireTeam, async (req: Request, res: Response) => {
   const submissions = await SubmissionDao.getSubmissionsForTeam(req.params.team._id);
   res.json(submissions.map(submission => sanitizeSubmission(submission)));
+});
+
+router.get('/grouped/:divisionId', PermissionsUtil.requireAdmin, async (req: Request, res: Response) => {
+  const submissions = await SubmissionDao.getSubmissionsGrouped(req.params.divisionId);
+  res.json(submissions);
 });
 
 router.get('/team/:id', PermissionsUtil.requireAdmin, async (req: Request, res: Response) => {

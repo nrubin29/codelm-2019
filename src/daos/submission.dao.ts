@@ -1,10 +1,14 @@
 import mongoose = require('mongoose');
-import { isGradedSubmission, SubmissionModel, TestCaseSubmissionModel } from '../../../common/src/models/submission.model';
-import { GradedProblemModel, TestCaseOutputMode } from '../../../common/src/models/problem.model';
-import { ModelPopulateOptions } from 'mongoose';
-import { SocketManager } from '../socket.manager';
-import { UpdateTeamPacket } from '../../../common/src/packets/update.team.packet';
-import { ProblemUtil } from '../../../common/src/utils/problem.util';
+import {
+  isGradedSubmission,
+  SubmissionModel,
+  TestCaseSubmissionModel
+} from '../../../common/src/models/submission.model';
+import {GradedProblemModel, ProblemType, TestCaseOutputMode} from '../../../common/src/models/problem.model';
+import {ModelPopulateOptions} from 'mongoose';
+import {SocketManager} from '../socket.manager';
+import {UpdateTeamPacket} from '../../../common/src/packets/update.team.packet';
+import {ProblemUtil} from '../../../common/src/utils/problem.util';
 
 type SubmissionType = SubmissionModel & mongoose.Document;
 
@@ -96,12 +100,15 @@ SubmissionSchema.virtual('result').get(function() {
     return 'Error';
   }
 
+  else if (this.problem.type === ProblemType.OpenEnded) {
+    return this.test ? 'Test' : 'Submitted'
+  }
+
   else {
     return ((this.testCases.filter(testCase => isTestCaseSubmissionCorrect(testCase, this.problem)).length / this.testCases.length) * 100).toFixed(0) + '%';
   }
 });
 
-// TODO: Lock the question after a certain number of incorrect submissions.
 SubmissionSchema.virtual('points').get(function() {
   if (isGradedSubmission(this)) {
     if (this.test) {
@@ -126,6 +133,7 @@ SubmissionSchema.virtual('points').get(function() {
   }
 
   else {
+    // TODO: Take into account algorithm performance
     return this.score;
   }
 });
@@ -148,6 +156,53 @@ export class SubmissionDao {
     const submissions = await Submission.find({team: teamId}).populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec();
     return submissions.map(submission => submission.toObject());
   }
+
+  static async getSubmissionsGrouped(divisionId: string): Promise<any> { // {'team.division': {_id: divisionId}}
+    const submissions: SubmissionModel[] = (await Submission.find().populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec()).map(submission => submission.toObject());
+    const result = {};
+
+    submissions.forEach(submission => {
+      if (submission.team.division._id.toString() !== divisionId) {
+        return;
+      }
+
+      if (!result[submission.team._id]) {
+        result[submission.team._id] = {[submission.problem._id]: [submission]};
+      }
+
+      else if (!result[submission.team._id][submission.problem._id]) {
+        result[submission.team._id][submission.problem._id] = [submission];
+      }
+
+      else {
+        result[submission.team._id][submission.problem._id].push(submission);
+      }
+    });
+
+    return result;
+  }
+
+  // static async getSubmissionsGrouped(division: string): Promise<any> {
+  //   let submissions = await Submission.aggregate([{$match: {division}}, {$group: {_id: {team: "$team", problem: "$problem"}, submissions: {$push: "$$ROOT"}}}]).exec();
+  //   submissions = await Submission.populate(submissions, SubmissionDao.problemPopulationPath);
+  //   submissions = await Submission.populate(submissions, SubmissionDao.teamPopulationPath);
+  //   console.log(submissions);
+  //   // submissions = submissions.map(submission => submission.toObject());
+  //
+  //   const result = {};
+  //
+  //   submissions.forEach(submission => {
+  //     if (result[submission._id.team]) {
+  //       result[submission._id.team][submission._id.problem] = submission.submissions;
+  //     }
+  //
+  //     else {
+  //       result[submission._id.team] = {[submission._id.problem]: submission.submissions};
+  //     }
+  //   });
+  //
+  //   return result;
+  // }
 
   static getDisputedSubmissions(): Promise<SubmissionModel[]> {
     return Submission.find({'dispute.open': true}).populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec();
