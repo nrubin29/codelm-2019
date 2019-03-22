@@ -15,9 +15,9 @@ app.set('trust proxy', true);
 const expressWs = require('express-ws')(app);
 
 app.use(morgan('[:date[clf]] :method :url :status :response-time ms :remote-addr'));
-app.use(bodyParser.urlencoded({extended: true})); // parse application/x-www-form-urlencoded
-app.use(bodyParser.json()); // parse application/json
-app.use(bodyParser.json({type: 'application/vnd.api+json'})); // Parse application/vnd.api+json as json
+app.use(bodyParser.urlencoded({extended: true, limit: '5mb'})); // parse application/x-www-form-urlencoded
+app.use(bodyParser.json({limit: '5mb'})); // parse application/json
+app.use(bodyParser.json({type: 'application/vnd.api+json', limit: '5mb'})); // Parse application/vnd.api+json as json
 app.use(fileUpload());
 app.use(express.static(path.join('.', 'dist', 'frontend')));
 app.use('/api', apiRoutes);

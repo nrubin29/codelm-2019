@@ -101,26 +101,42 @@ export class SocketManager {
   onLoginPacket(loginPacket: LoginPacket, socket: WebSocket): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       TeamDao.login(loginPacket.username, loginPacket.password).then(team => {
-        PermissionsUtil.hasAccess(team).then(access => {
-          const response = access ? LoginResponse.SuccessTeam : LoginResponse.Closed;
-          this.emitToSocket(new LoginResponsePacket(response, response === LoginResponse.SuccessTeam ? sanitizeTeam(team) : undefined), socket);
+        if (this.sockets.has(team._id.toString())) {
+          this.emitToSocket(new LoginResponsePacket(LoginResponse.AlreadyConnected), socket);
+          socket.close();
+          reject();
+        }
 
-          if (response === LoginResponse.SuccessTeam) {
-            this.sockets.set(team._id.toString(), socket);
-            resolve(team._id.toString());
-          }
+        else {
+          PermissionsUtil.hasAccess(team).then(access => {
+            const response = access ? LoginResponse.SuccessTeam : LoginResponse.Closed;
+            this.emitToSocket(new LoginResponsePacket(response, response === LoginResponse.SuccessTeam ? sanitizeTeam(team) : undefined), socket);
 
-          else {
-            socket.close();
-            reject();
-          }
-        });
+            if (response === LoginResponse.SuccessTeam) {
+              this.sockets.set(team._id.toString(), socket);
+              resolve(team._id.toString());
+            }
+
+            else {
+              socket.close();
+              reject();
+            }
+          });
+        }
       }).catch((response: LoginResponse | Error) => {
         if (response === LoginResponse.NotFound) {
           AdminDao.login(loginPacket.username, loginPacket.password).then(admin => {
-            this.sockets.set(admin._id.toString(), socket);
-            this.emitToSocket(new LoginResponsePacket(LoginResponse.SuccessAdmin, undefined, admin), socket);
-            resolve(admin._id.toString());
+            if (this.sockets.has(admin._id.toString())) {
+              this.emitToSocket(new LoginResponsePacket(LoginResponse.AlreadyConnected), socket);
+              socket.close();
+              reject();
+            }
+
+            else {
+              this.sockets.set(admin._id.toString(), socket);
+              this.emitToSocket(new LoginResponsePacket(LoginResponse.SuccessAdmin, undefined, admin), socket);
+              resolve(admin._id.toString());
+            }
           }).catch((response: LoginResponse | Error) => {
             if ((response as any).stack !== undefined) {
               console.error(response);
