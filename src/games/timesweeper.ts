@@ -1,6 +1,9 @@
 import Game from "./game";
 import {GameResult} from "./game.result";
 
+const PERSON = 9;
+const NUM_PEOPLE = 10;
+
 export class Timesweeper implements Game {
   fullBoard: number[][];
   playerBoard: number[][];
@@ -18,7 +21,7 @@ export class Timesweeper implements Game {
     }
 
     // Place people
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < NUM_PEOPLE; i++) {
       let row, col;
 
       do {
@@ -26,10 +29,10 @@ export class Timesweeper implements Game {
         col = Math.floor(Math.random() * 10);
       } while (this.fullBoard[row][col] !== 0);
 
-      this.fullBoard[row][col] = 7;
+      this.fullBoard[row][col] = PERSON;
     }
 
-    const isPerson = x => x === 7 ? 1 : 0;
+    const isPerson = x => x === PERSON ? 1 : 0;
 
     const countNeighbors = (row, col) => {
       let sum = 0;
@@ -57,7 +60,7 @@ export class Timesweeper implements Game {
     // Fill in numbers
     for (let row = 0; row < 10; row++) {
       for (let col = 0; col < 10; col++) {
-        if (this.fullBoard[row][col] !== 7) {
+        if (this.fullBoard[row][col] !== PERSON) {
           this.fullBoard[row][col] = countNeighbors(row, col);
         }
       }
@@ -78,7 +81,7 @@ export class Timesweeper implements Game {
     visited.push([row, col]);
 
     if (this.playerBoard[row] !== undefined && this.playerBoard[row][col] !== undefined) {
-      if (base || this.fullBoard[row][col] === 0) {
+      if (base || this.fullBoard[row][col] !== PERSON) {
         this.playerBoard[row][col] = this.fullBoard[row][col];
       }
 
@@ -95,17 +98,17 @@ export class Timesweeper implements Game {
   };
 
   private finished() {
-    let numSevens = 0;
+    let numPeople = 0;
 
     for (let row = 0; row < 10; row++) {
       for (let col = 0; col < 10; col++) {
-        if (this.playerBoard[row][col] === 7) {
-          numSevens++;
+        if (this.playerBoard[row][col] === PERSON) {
+          numPeople++;
         }
       }
     }
 
-    return numSevens === 6;
+    return numPeople === NUM_PEOPLE;
   };
 
   onInput(data: string): string | GameResult {
