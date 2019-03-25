@@ -1,4 +1,13 @@
-import {AfterViewInit, Component, ElementRef, OnInit, Optional, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnInit,
+  Optional,
+  QueryList,
+  ViewChild,
+  ViewChildren
+} from '@angular/core';
 import {SubmissionStatusPacket} from "../../../../../../common/src/packets/submission.status.packet";
 import {GamePacket} from "../../../../../../common/src/packets/game.packet";
 import {SubmissionCompletedPacket} from "../../../../../../common/src/packets/submission.completed.packet";
@@ -24,31 +33,39 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
 
   status = 'Preparing';
   error: string;
+  score: number;
   _id: string;
 
   @ViewChild('htmlLog') htmlLog: ElementRef<HTMLDivElement>;
   @ViewChild(MatTable) table: MatTable<object>;
-  @ViewChild('board') board: ElementRef<HTMLTableSectionElement>;
-  range: number[];
+  @ViewChild('board') board: ElementRef<HTMLCanvasElement>;
+  @ViewChildren('img') images: QueryList<ElementRef<HTMLImageElement>>;
+
+  playerBoard: number[][];
 
   constructor(@Optional() private dashboardComponent: DashboardComponent, @Optional() private adminComponent: AdminComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
 
   ngOnInit() {
-    this.range = new Array(10);
   }
 
   ngAfterViewInit() {
+    const ctx = this.board.nativeElement.getContext('2d');
+
+    for (let i = 0; i < 10; i++) {
+      for (let j = 0; j < 10; j++) {
+        ctx.drawImage(this.images.toArray()[0].nativeElement, 0, 0, 16, 16, j * 32, i * 32, 32, 32);
+      }
+    }
+
     this.toggle().then(() => {
       this.socketService.on<SubmissionStatusPacket>('submissionStatus', packet => {
         this.queue.push(packet);
       });
 
       this.socketService.on<GamePacket>('game', packet => {
-        // TODO: If there's an error, clear the queue before putting the packet on.
-        // TODO: Show errors correctly.
         if (packet.data.hasOwnProperty('error')) {
           this.error = packet.data['error'];
-          this.queue = []; // TODO: Maybe this is a bad idea?
+          this.queue = [];
           return;
         }
 
@@ -56,12 +73,12 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
           if (typeof packet.data['input'] == 'object') {
             if (packet.data['input'].hasOwnProperty('error')) {
               this.error = packet.data['input']['error'];
-              this.queue = []; // TODO: Maybe this is a bad idea?
+              this.queue = [];
               return;
             }
 
             else if (packet.data['input'].hasOwnProperty('score')) {
-              // TODO: Save score.
+              this.score = parseInt(packet.data['input']['score']);
               packet.data['input'] = 'Correct';
             }
           }
@@ -101,25 +118,25 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
 
           else {
             if (packet.data.hasOwnProperty('input')) {
-              const line: string[] = packet.data['input'].split(' ');
+              const line: number[] = packet.data['input'].split(' ').map(x => parseInt(x));
+              const guess: number[] = packet.data['output'].split(' ').map(x => parseInt(x));
 
               if (line.length === 100) {
-                for (let i = 0; i < 100; i++) {
-                  this.board.nativeElement.children[Math.floor(i / 10)].children[i % 10].innerHTML = line[i];
+                this.playerBoard = new Array(10).fill(0).map((_, i) => line.slice(i * 10, i * 10 + 10));
+
+                const ctx = this.board.nativeElement.getContext('2d');
+                ctx.strokeStyle = 'orange';
+                ctx.lineWidth = 2;
+
+                for (let i = 0; i < 10; i++) {
+                  for (let j = 0; j < 10; j++) {
+                    ctx.drawImage(this.images.toArray()[this.playerBoard[i][j] + 1].nativeElement, 0, 0, 16, 16, j * 32, i * 32, 32, 32);
+
+                    if (guess[0] === i && guess[1] === j) {
+                      ctx.strokeRect(j * 32, i * 32, 32, 32);
+                    }
+                  }
                 }
-
-                const guess: number[] = packet.data['output'].split(' ').map(x => parseInt(x));
-                const cell = this.board.nativeElement.children[Math.floor(guess[0])].children[guess[1]] as HTMLElement;
-
-                if (line[Math.floor(guess[0] * 10 + guess[1])] === '7') {
-                  cell.style.background = 'lightgreen';
-                }
-
-                else {
-                  cell.style.background = 'yellow';
-                }
-
-                // cell.style.color = 'white';
               }
             }
 
