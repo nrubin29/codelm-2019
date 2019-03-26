@@ -16,25 +16,22 @@ import {ViewSubmissionsComponent} from "../view-submissions/view-submissions.com
 })
 export class LeaderboardComponent implements OnInit {
   @Input() division: DivisionModel;
+  @Input() groupedSubmissions: object;
+
   teams: TeamModel[] = [];
   problems: ProblemModel[] = [];
-  data: object;
 
-  // TODO: Refresh data every so often
   // TODO: Add filtering
-  // TODO: Add an "overall" tab (for easy filtering)
   // TODO: Make the points column sortable
-  // TODO: Clean up this code (backend too)
-  // TODO: Show loading indicator while data is being loaded
-  // TODO: Call /submissions/grouped endpoint from admin-home component and pass data as appropriate.
+  // TODO: Clean up this code
   // TODO: Incorporate disputes (yellow background + ! icon)
 
   constructor(private teamService: TeamService, private problemService: ProblemService, private submissionService: SubmissionService, private dialog: MatDialog) { }
 
   ngOnInit() {
+    console.log(this.groupedSubmissions);
     this.teamService.getTeamsForDivision(this.division._id).then(teams => this.teams = teams.sort(((a, b) => b.score - a.score)));
     this.problemService.getProblems(this.division._id).then(problems => this.problems = problems);
-    this.submissionService.getSubmissionsGrouped(this.division._id).then(data => this.data = data);
   }
 
   get columns() {
@@ -42,7 +39,7 @@ export class LeaderboardComponent implements OnInit {
   }
 
   get tableData() {
-    return this.teams.filter(team => team._id in this.data).map(team => Object.assign({team}, ...Object.keys(this.data[team._id]).map(problemId => ({[problemId]: this.data[team._id][problemId]}))));
+    return this.teams.filter(team => team._id in this.groupedSubmissions).map(team => Object.assign({team}, ...Object.keys(this.groupedSubmissions[team._id]).map(problemId => ({[problemId]: this.groupedSubmissions[team._id][problemId]}))));
   }
 
   status(submissions: SubmissionModel[]) {

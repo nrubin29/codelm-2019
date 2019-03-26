@@ -1,4 +1,4 @@
-<mat-table *ngIf="data" [dataSource]="tableData">
+<mat-table *ngIf="groupedSubmissions" [dataSource]="tableData">
   <ng-container matColumnDef="team">
     <mat-header-cell *matHeaderCellDef>Team</mat-header-cell>
     <mat-cell *matCellDef="let element"><a [routerLink]="['team', element.team._id]">{{element.team.username}}</a></mat-cell>
