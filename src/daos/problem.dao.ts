@@ -22,6 +22,7 @@ const Problem = mongoose.model<ProblemType>('Problem', new mongoose.Schema({
   description: String,
   type: String,
   game: String,
+  extras: Object,
   divisions: [ProblemDivisionSchema],
   testCaseOutputMode: {type: String, default: TestCaseOutputMode.CaseSensitive},
   testCases: [TestCaseSchema]

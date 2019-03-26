@@ -25,6 +25,7 @@ import * as WebSocket from 'ws';
 import {Express} from "express";
 import {WithWebsocketMethod} from "express-ws";
 import {ReplayPacket} from "../../common/src/packets/replay.packet";
+import {SubmissionExtrasPacket} from "../../common/src/packets/submission.extras.packet";
 
 export class SocketManager {
   private static _instance: SocketManager;
@@ -220,6 +221,7 @@ export class SocketManager {
 
     else if (isOpenEndedProblem(problem)) {
       serverProblemSubmission.game = problem.game;
+      serverProblemSubmission.problemExtras = problem.extras;
     }
 
     const {testCases, err} = await this.runSubmission(serverProblemSubmission, problem, socket);
@@ -261,6 +263,7 @@ export class SocketManager {
     this.emitToSocket(new SubmissionCompletedPacket(submission._id), socket);
   }
 
+  // TODO: Combine this with onSubmissionPacket
   async onReplayPacket(packet: ReplayPacket, socket: WebSocket) {
     const submission = await SubmissionDao.getSubmission(packet.replayRequest._id);
 
@@ -277,6 +280,7 @@ export class SocketManager {
 
     else if (isOpenEndedProblem(submission.problem)) {
       serverProblemSubmission.game = submission.problem.game;
+      serverProblemSubmission.problemExtras = submission.problem.extras;
     }
 
     await this.runSubmission(serverProblemSubmission, submission.problem, socket);
@@ -285,6 +289,8 @@ export class SocketManager {
 
   private runSubmission(serverProblemSubmission: ServerProblemSubmission, problem: ProblemModel, socket: WebSocket): Promise<{testCases: TestCaseSubmissionModel[], err: string}> {
     return new Promise<{testCases: TestCaseSubmissionModel[], err: string}>(resolve => {
+      this.emitToSocket(new SubmissionExtrasPacket(serverProblemSubmission.problemExtras, VERSION), socket);
+
       const process = spawn('docker', ['run', '-i', '--rm', '--cap-drop', 'ALL', '--net=none', 'coderunner']);
       const testCases: TestCaseSubmissionModel[] = [];
       const errors = [];
