@@ -14,6 +14,8 @@ export class EditOpenEndedProblemComponent implements OnInit, OnDestroy {
 
   controls: {[name: string]: AbstractControl};
 
+  // TODO: Support extras
+
   constructor() {
   }
 

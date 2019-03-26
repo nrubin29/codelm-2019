@@ -21,6 +21,8 @@ import {SubmissionPacket} from "../../../../../../common/src/packets/submission.
 import {VERSION} from "../../../../../../common/version";
 import {AdminComponent} from "../../../admin/views/admin/admin.component";
 import {ReplayPacket} from "../../../../../../common/src/packets/replay.packet";
+import {SubmissionExtrasPacket} from "../../../../../../common/src/packets/submission.extras.packet";
+import {TimesweeperExtras, TimesweeperOutputType} from "../../../../../../common/src/models/game.model";
 
 @Component({
   selector: 'app-timesweeper',
@@ -41,6 +43,7 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
   @ViewChild('board') board: ElementRef<HTMLCanvasElement>;
   @ViewChildren('img') images: QueryList<ElementRef<HTMLImageElement>>;
 
+  extras: TimesweeperExtras;
   playerBoard: number[][];
 
   constructor(@Optional() private dashboardComponent: DashboardComponent, @Optional() private adminComponent: AdminComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
@@ -49,15 +52,17 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    const ctx = this.board.nativeElement.getContext('2d');
-
-    for (let i = 0; i < 10; i++) {
-      for (let j = 0; j < 10; j++) {
-        ctx.drawImage(this.images.toArray()[0].nativeElement, 0, 0, 16, 16, j * 32, i * 32, 32, 32);
-      }
-    }
-
     this.toggle().then(() => {
+      this.socketService.once<SubmissionExtrasPacket>('submissionExtras', packet => {
+        this.extras = packet.extras;
+
+        this.playerBoard = [];
+
+        for (let i = 0; i < this.extras.boardSize; i++) {
+          this.playerBoard.push(new Array(this.extras.boardSize).fill(-1));
+        }
+      });
+
       this.socketService.on<SubmissionStatusPacket>('submissionStatus', packet => {
         this.queue.push(packet);
       });
@@ -117,24 +122,33 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
           }
 
           else {
-            if (packet.data.hasOwnProperty('input')) {
-              const line: number[] = packet.data['input'].split(' ').map(x => parseInt(x));
-              const guess: number[] = packet.data['output'].split(' ').map(x => parseInt(x));
+            if (packet.data.hasOwnProperty('input') && packet.data['input'] !== 'Correct') {
+              let guess: [number, number];
 
-              if (line.length === 100) {
+              if (this.extras.outputType === TimesweeperOutputType.GuessResult) {
+                const result = parseInt(packet.data['input']);
+                const g = parseInt(packet.data['output']);
+                guess = [Math.floor(g / this.extras.boardSize), g % this.extras.boardSize];
+
+                this.playerBoard[guess[0]][guess[1]] = result;
+              }
+
+              else if (this.extras.outputType === TimesweeperOutputType.FullBoard) {
+                const line: number[] = packet.data['input'].split(' ').map(x => parseInt(x));
+                guess = packet.data['output'].split(' ').map(x => parseInt(x));
                 this.playerBoard = new Array(10).fill(0).map((_, i) => line.slice(i * 10, i * 10 + 10));
+              }
 
-                const ctx = this.board.nativeElement.getContext('2d');
-                ctx.strokeStyle = 'orange';
-                ctx.lineWidth = 2;
+              const ctx = this.board.nativeElement.getContext('2d');
+              ctx.strokeStyle = 'orange';
+              ctx.lineWidth = 2;
 
-                for (let i = 0; i < 10; i++) {
-                  for (let j = 0; j < 10; j++) {
-                    ctx.drawImage(this.images.toArray()[this.playerBoard[i][j] + 1].nativeElement, 0, 0, 16, 16, j * 32, i * 32, 32, 32);
+              for (let i = 0; i < this.extras.boardSize; i++) {
+                for (let j = 0; j < this.extras.boardSize; j++) {
+                  ctx.drawImage(this.images.toArray()[this.playerBoard[i][j] + 1].nativeElement, 0, 0, 16, 16, j * 32, i * 32, 32, 32);
 
-                    if (guess[0] === i && guess[1] === j) {
-                      ctx.strokeRect(j * 32, i * 32, 32, 32);
-                    }
+                  if (guess[0] === i && guess[1] === j) {
+                    ctx.strokeRect(j * 32, i * 32, 32, 32);
                   }
                 }
               }
