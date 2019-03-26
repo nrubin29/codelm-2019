@@ -7,6 +7,8 @@ import {Language} from "./language";
 import {CodeFile} from "./codefile";
 import * as fs from "fs-extra";
 
+const TIMEOUT = 10 * 1000;
+
 interface RunResult {
   output: string;
 }
@@ -34,7 +36,7 @@ export class CodeRunner {
 
   private runProcessSync(cmd: string, args: string[], input?: string): Promise<ProcessRunResult> {
     return new Promise<ProcessRunResult>((resolve, reject) => {
-      const process = execFile(cmd, args, { cwd: this.folder, timeout: 5000 }, (err: Error & {signal: string}, stdout, stderr) => {
+      const process = execFile(cmd, args, { cwd: this.folder, timeout: TIMEOUT }, (err: Error & {signal: string}, stdout, stderr) => {
         if (err && err.signal === 'SIGTERM') {
           reject({error: 'Timed out'});
         }
@@ -62,7 +64,7 @@ export class CodeRunner {
         proc.stdout.removeAllListeners('data');
         proc.stderr.removeAllListeners('data');
         reject({error: 'Timed out'});
-      }, 5000); // TODO: Increase timeout
+      }, TIMEOUT); // TODO: Increase timeout
 
       let buf = '';
       proc.stdout.on('data', (data: Buffer) => {
@@ -85,10 +87,10 @@ export class CodeRunner {
 
           else {
             // process.kill(-proc.pid, 'SIGKILL');
+            clearTimeout(timeout);
             proc.kill();
             proc.stdout.removeAllListeners('data');
             proc.stderr.removeAllListeners('data');
-            clearTimeout(timeout);
             resolve();
           }
         }
@@ -97,10 +99,10 @@ export class CodeRunner {
       // TODO: Handle stderr correctly.
       proc.stderr.on('data', (data: Buffer) => {
         // process.kill(-proc.pid, 'SIGKILL');
+        clearTimeout(timeout);
         proc.kill();
         proc.stdout.removeAllListeners('data');
         proc.stderr.removeAllListeners('data');
-        clearTimeout(timeout);
         reject({error: data.toString()});
       });
 

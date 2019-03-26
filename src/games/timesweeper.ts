@@ -1,32 +1,32 @@
 import Game from "./game";
 import {GameResult} from "./game.result";
+import {TimesweeperExtras, TimesweeperOutputType} from "../../../common/src/models/game.model";
 
 const PERSON = 9;
-const NUM_PEOPLE = 10;
 
 export class Timesweeper implements Game {
   fullBoard: number[][];
   playerBoard: number[][];
   guesses: number;
 
-  constructor() {
+  constructor(private extras: TimesweeperExtras) {
     this.fullBoard = [];
     this.playerBoard = [];
     this.guesses = 0;
 
     // Generate empty boards
-    for (let i = 0; i < 10; i++) {
-      this.fullBoard.push(new Array(10).fill(0));
-      this.playerBoard.push(new Array(10).fill(-1));
+    for (let i = 0; i < extras.boardSize; i++) {
+      this.fullBoard.push(new Array(extras.boardSize).fill(0));
+      this.playerBoard.push(new Array(extras.boardSize).fill(-1));
     }
 
     // Place people
-    for (let i = 0; i < NUM_PEOPLE; i++) {
+    for (let i = 0; i < extras.numPeople; i++) {
       let row, col;
 
       do {
-        row = Math.floor(Math.random() * 10);
-        col = Math.floor(Math.random() * 10);
+        row = Math.floor(Math.random() * extras.boardSize);
+        col = Math.floor(Math.random() * extras.boardSize);
       } while (this.fullBoard[row][col] !== 0);
 
       this.fullBoard[row][col] = PERSON;
@@ -58,8 +58,8 @@ export class Timesweeper implements Game {
     };
 
     // Fill in numbers
-    for (let row = 0; row < 10; row++) {
-      for (let col = 0; col < 10; col++) {
+    for (let row = 0; row < extras.boardSize; row++) {
+      for (let col = 0; col < extras.boardSize; col++) {
         if (this.fullBoard[row][col] !== PERSON) {
           this.fullBoard[row][col] = countNeighbors(row, col);
         }
@@ -75,7 +75,7 @@ export class Timesweeper implements Game {
     }
 
     return false;
-  };
+  }
 
   private uncover(row, col, base=true, visited=[]) {
     visited.push([row, col]);
@@ -95,36 +95,42 @@ export class Timesweeper implements Game {
         }
       }
     }
-  };
+  }
 
   private finished() {
     let numPeople = 0;
 
-    for (let row = 0; row < 10; row++) {
-      for (let col = 0; col < 10; col++) {
+    for (let row = 0; row < this.extras.boardSize; row++) {
+      for (let col = 0; col < this.extras.boardSize; col++) {
         if (this.playerBoard[row][col] === PERSON) {
           numPeople++;
         }
       }
     }
 
-    return numPeople === NUM_PEOPLE;
-  };
+    return numPeople === this.extras.numPeople;
+  }
 
   onInput(data: string): string | GameResult {
-    this.guesses++;
-
-    // TODO: Validate response.
-    const split = data.split(' ').map(x => parseInt(x));
-    const row = split[0], col = split[1];
-
     if (this.finished()) {
       return {score: this.guesses};
     }
 
-    else {
+    this.guesses++;
+
+    // TODO: Validate response.
+    const split = data.split(' ').map(x => parseInt(x));
+
+    if (this.extras.outputType === TimesweeperOutputType.FullBoard) {
+      const row = split[0], col = split[1];
       this.uncover(row, col);
       return this.playerBoard.map(r => r.join(' ')).join(' ');
+    }
+
+    else if (this.extras.outputType === TimesweeperOutputType.GuessResult) {
+      const row = Math.floor(split[0] / this.extras.boardSize), col = split[0] % this.extras.boardSize;
+      this.uncover(row, col);
+      return this.playerBoard[row][col].toString();
     }
   }
 }

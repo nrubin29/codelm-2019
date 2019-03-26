@@ -59,7 +59,7 @@ stdin.once('data', async data => {
     }
 
     else if (submission.game === Game.Timesweeper) {
-      await runner.runGame(new Timesweeper());
+      await runner.runGame(new Timesweeper(submission.problemExtras));
     }
 
     else {
