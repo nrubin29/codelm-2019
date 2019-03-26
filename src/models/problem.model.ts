@@ -45,6 +45,7 @@ export function isGradedProblem(problem: ProblemModel): problem is GradedProblem
 
 export interface OpenEndedProblemModel extends ProblemModel {
   game: Game;
+  extras?: any;
 }
 
 export function isOpenEndedProblem(problem: ProblemModel): problem is OpenEndedProblemModel {

@@ -16,6 +16,7 @@ export interface ServerProblemSubmission {
   problemTitle: string;
   type: ProblemType;
   game?: Game;
+  problemExtras?: any;
   testCases?: TestCaseModel[];
   language: string;
   code: string;
