@@ -10,8 +10,8 @@ router.get('/', PermissionsUtil.requireTeam, async (req: Request, res: Response)
   res.json(submissions.map(submission => sanitizeSubmission(submission)));
 });
 
-router.get('/grouped/:divisionId', PermissionsUtil.requireAdmin, async (req: Request, res: Response) => {
-  const submissions = await SubmissionDao.getSubmissionsGrouped(req.params.divisionId);
+router.get('/grouped', PermissionsUtil.requireAdmin, async (req: Request, res: Response) => {
+  const submissions = await SubmissionDao.getSubmissionsGrouped();
   res.json(submissions);
 });
 

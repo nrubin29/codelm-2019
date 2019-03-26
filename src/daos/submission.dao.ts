@@ -157,27 +157,36 @@ export class SubmissionDao {
     return submissions.map(submission => submission.toObject());
   }
 
-  static async getSubmissionsGrouped(divisionId: string): Promise<any> { // {'team.division': {_id: divisionId}}
+  static async getSubmissionsGrouped(): Promise<any> { // {'team.division': {_id: divisionId}}
     const submissions: SubmissionModel[] = (await Submission.find().populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec()).map(submission => submission.toObject());
     const result = {};
 
-    submissions.forEach(submission => {
-      if (submission.team.division._id.toString() !== divisionId) {
-        return;
+    for (let submission of submissions) {
+      if (!submission.team || !submission.problem) {
+        console.error('Bad/stale submission: ' + submission._id);
+        continue;
       }
 
-      if (!result[submission.team._id]) {
-        result[submission.team._id] = {[submission.problem._id]: [submission]};
+      const divisionId = submission.team.division._id;
+      const teamId = submission.team._id;
+      const problemId = submission.problem._id;
+
+      if (!(divisionId in result)) {
+        result[divisionId] = {[teamId]: {[problemId]: [submission]}};
       }
 
-      else if (!result[submission.team._id][submission.problem._id]) {
-        result[submission.team._id][submission.problem._id] = [submission];
+      else if (!(teamId in result[divisionId])) {
+        result[divisionId][teamId] = {[problemId]: [submission]};
+      }
+
+      else if (!(problemId in result[divisionId][teamId])) {
+        result[divisionId][teamId][problemId] = [submission];
       }
 
       else {
-        result[submission.team._id][submission.problem._id].push(submission);
+        result[divisionId][teamId][problemId].push(submission);
       }
-    });
+    }
 
     return result;
   }
