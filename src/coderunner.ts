@@ -64,7 +64,7 @@ export class CodeRunner {
         proc.stdout.removeAllListeners('data');
         proc.stderr.removeAllListeners('data');
         reject({error: 'Timed out'});
-      }, TIMEOUT); // TODO: Increase timeout
+      }, TIMEOUT);
 
       let buf = '';
       proc.stdout.on('data', (data: Buffer) => {
@@ -77,21 +77,33 @@ export class CodeRunner {
         }
 
         if (guess) {
-          // TODO: Cap the number of guesses.
           const result = game.onInput(guess);
           this.output.next({input: result, output: guess});
 
-          if (typeof result === 'string') {
-            proc.stdin.write(result + '\n');
-          }
+          if (game.isFinished()) {
+            this.output.next({input: game.getResult(), output: guess});
 
-          else {
             // process.kill(-proc.pid, 'SIGKILL');
             clearTimeout(timeout);
             proc.kill();
             proc.stdout.removeAllListeners('data');
             proc.stderr.removeAllListeners('data');
             resolve();
+          }
+
+          else {
+            if (typeof result === 'string') {
+              proc.stdin.write(result + '\n');
+            }
+
+            else {
+              // process.kill(-proc.pid, 'SIGKILL');
+              clearTimeout(timeout);
+              proc.kill();
+              proc.stdout.removeAllListeners('data');
+              proc.stderr.removeAllListeners('data');
+              reject({error: result.error});
+            }
           }
         }
       });

@@ -97,7 +97,7 @@ export class Timesweeper implements Game {
     }
   }
 
-  private finished() {
+  public isFinished(): boolean {
     let numPeople = 0;
 
     for (let row = 0; row < this.extras.boardSize; row++) {
@@ -112,25 +112,48 @@ export class Timesweeper implements Game {
   }
 
   onInput(data: string): string | GameResult {
-    if (this.finished()) {
-      return {score: this.guesses};
-    }
-
     this.guesses++;
 
-    // TODO: Validate response.
     const split = data.split(' ').map(x => parseInt(x));
 
+    if (split.findIndex(isNaN) !== -1) {
+      return {error: 'invalid guess'};
+    }
+
+    let res;
+
     if (this.extras.outputType === TimesweeperOutputType.FullBoard) {
+      if (split.length !== 2) {
+        return {error: 'invalid guess'};
+      }
+
       const row = split[0], col = split[1];
       this.uncover(row, col);
-      return this.playerBoard.map(r => r.join(' ')).join(' ');
+      res = this.playerBoard.map(r => r.join(' ')).join(' ');
     }
 
     else if (this.extras.outputType === TimesweeperOutputType.GuessResult) {
+      if (split.length !== 1) {
+        return {error: 'invalid guess'};
+      }
+
       const row = Math.floor(split[0] / this.extras.boardSize), col = split[0] % this.extras.boardSize;
       this.uncover(row, col);
-      return this.playerBoard[row][col].toString();
+      res = this.playerBoard[row][col].toString();
     }
+
+    return res;
+
+    // if (this.finished()) {
+    //   return {score: this.guesses};
+    // }
+    //
+    // else {
+    //   return res;
+    // }
+  }
+
+  getResult(): GameResult {
+    return {score: this.guesses};
   }
 }

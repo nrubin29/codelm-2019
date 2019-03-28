@@ -4,10 +4,12 @@ import {GameResult} from "./game.result";
 export class HighLow implements Game {
   answer: number;
   guesses: number;
+  finished: boolean;
 
   constructor() {
     this.answer = Math.floor(Math.random() * 100) + 1;
     this.guesses = 0;
+    this.finished = false;
   }
 
   onInput(data: string): string | GameResult {
@@ -27,7 +29,17 @@ export class HighLow implements Game {
     }
 
     else {
-      return {score: this.guesses};
+      this.finished = true;
+      return '0';
+      // return {score: this.guesses};
     }
+  }
+
+  isFinished(): boolean {
+    return this.finished;
+  }
+
+  getResult(): GameResult {
+    return {score: this.guesses};
   }
 }
