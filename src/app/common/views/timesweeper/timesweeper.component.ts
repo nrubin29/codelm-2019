@@ -154,9 +154,11 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
               }
             }
 
-            this.log.push(packet.data);
-            this.table.renderRows();
-            this.htmlLog.nativeElement.scrollTop = this.htmlLog.nativeElement.scrollHeight;
+            if (packet.data['input'] !== 'Correct') {
+              this.log.push(packet.data);
+              this.table.renderRows();
+              this.htmlLog.nativeElement.scrollTop = this.htmlLog.nativeElement.scrollHeight;
+            }
           }
         }
       }, 500);

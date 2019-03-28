@@ -24,6 +24,7 @@ export class HighlowComponent implements AfterViewInit {
 
   status = 'Preparing';
   error: string;
+  score: number;
   _id: string;
 
   @ViewChild('htmlLog') htmlLog: ElementRef<HTMLDivElement>;
@@ -55,12 +56,12 @@ export class HighlowComponent implements AfterViewInit {
 
             else if (packet.data['input'].hasOwnProperty('score')) {
               // TODO: Save score if not replay.
-              packet.data['input'] = 'Correct';
+              this.score = parseInt(packet.data['input']['score']);
             }
           }
 
           else {
-            packet.data['input'] = packet.data['input'] === '1' ? 'Too high' : packet.data['input'] === '-1' ? 'Too low': 'unknown';
+            packet.data['input'] = packet.data['input'] === '1' ? 'Too high' : packet.data['input'] === '-1' ? 'Too low': packet.data['input'] === '0' ? 'Correct' : packet.data['input'];
           }
         }
 
@@ -96,7 +97,7 @@ export class HighlowComponent implements AfterViewInit {
             this.status = packet.status;
           }
 
-          else {
+          else if (typeof packet.data['input'] === 'string') {
             this.log.push(packet.data);
             this.table.renderRows();
             this.htmlLog.nativeElement.scrollTop = this.htmlLog.nativeElement.scrollHeight;

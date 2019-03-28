@@ -12,7 +12,8 @@
 <div class="flex display-side container">
   <div class="fix-size">
     <app-card title="Status">
-      <p>{{error ? error : status === 'Finished' ? 'Guesses: ' + score : status}}</p>
+      <code *ngIf="error">{{error}}</code>
+      <p *ngIf="!error">{{status === 'Finished' ? 'Guesses: ' + score : status}}</p>
     </app-card>
     <app-card title="Board">
       <canvas #board width="320" height="320"></canvas>
