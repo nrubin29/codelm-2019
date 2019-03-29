@@ -30,7 +30,8 @@ import {SubmissionExtrasPacket} from "../../common/src/packets/submission.extras
 export class SocketManager {
   private static _instance: SocketManager;
 
-  private sockets: Map<string, WebSocket>;
+  private teamSockets: Map<string, WebSocket>;
+  private adminSockets: Map<string, WebSocket>;
 
   static get instance(): SocketManager {
     if (!SocketManager._instance) {
@@ -48,9 +49,9 @@ export class SocketManager {
     SocketManager._instance = new SocketManager(app);
   }
 
-  public emit(userId: string, packet: Packet) {
-    if (this.sockets.has(userId)) {
-      this.emitToSocket(packet, this.sockets.get(userId))
+  public emit(teamId: string, packet: Packet) {
+    if (this.teamSockets.has(teamId)) {
+      this.emitToSocket(packet, this.teamSockets.get(teamId))
     }
   }
 
@@ -59,15 +60,23 @@ export class SocketManager {
   }
 
   public emitToAll(packet: Packet) {
-    this.sockets.forEach(socket => this.emitToSocket(packet, socket));
+    this.teamSockets.forEach(socket => this.emitToSocket(packet, socket));
+    this.adminSockets.forEach(socket => this.emitToSocket(packet, socket));
+  }
+
+  public kickTeams() {
+    this.teamSockets.forEach(socket => socket.close());
+    this.teamSockets.clear();
   }
 
   protected constructor(app: Express) {
-    this.sockets = new Map<string, WebSocket>();
+    this.teamSockets = new Map<string, WebSocket>();
+    this.adminSockets = new Map<string, WebSocket>();
 
     setInterval(() => {
       // This is apparently necessary to stop the random disconnecting.
-      this.sockets.forEach(socket => socket.ping());
+      this.teamSockets.forEach(socket => socket.ping());
+      this.adminSockets.forEach(socket => socket.ping());
     }, 15 * 1000);
 
     (app as any as WithWebsocketMethod).ws('/', socket => {
@@ -93,7 +102,8 @@ export class SocketManager {
 
       socket.onclose = () => {
         if (_id) {
-          this.sockets.delete(_id);
+          this.teamSockets.delete(_id);
+          this.adminSockets.delete(_id);
         }
       };
     });
@@ -102,7 +112,7 @@ export class SocketManager {
   onLoginPacket(loginPacket: LoginPacket, socket: WebSocket): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       TeamDao.login(loginPacket.username, loginPacket.password).then(team => {
-        if (this.sockets.has(team._id.toString())) {
+        if (this.teamSockets.has(team._id.toString())) {
           this.emitToSocket(new LoginResponsePacket(LoginResponse.AlreadyConnected), socket);
           socket.close();
           reject();
@@ -114,7 +124,7 @@ export class SocketManager {
             this.emitToSocket(new LoginResponsePacket(response, response === LoginResponse.SuccessTeam ? sanitizeTeam(team) : undefined), socket);
 
             if (response === LoginResponse.SuccessTeam) {
-              this.sockets.set(team._id.toString(), socket);
+              this.teamSockets.set(team._id.toString(), socket);
               resolve(team._id.toString());
             }
 
@@ -127,14 +137,14 @@ export class SocketManager {
       }).catch((response: LoginResponse | Error) => {
         if (response === LoginResponse.NotFound) {
           AdminDao.login(loginPacket.username, loginPacket.password).then(admin => {
-            if (this.sockets.has(admin._id.toString())) {
+            if (this.adminSockets.has(admin._id.toString())) {
               this.emitToSocket(new LoginResponsePacket(LoginResponse.AlreadyConnected), socket);
               socket.close();
               reject();
             }
 
             else {
-              this.sockets.set(admin._id.toString(), socket);
+              this.adminSockets.set(admin._id.toString(), socket);
               this.emitToSocket(new LoginResponsePacket(LoginResponse.SuccessAdmin, undefined, admin), socket);
               resolve(admin._id.toString());
             }
@@ -177,7 +187,7 @@ export class SocketManager {
         if (canRegister) {
           TeamDao.register(registerPacket.teamData).then(team => {
             this.emitToSocket(new LoginResponsePacket(LoginResponse.SuccessTeam, sanitizeTeam(team)), socket);
-            this.sockets.set(team._id.toString(), socket);
+            this.teamSockets.set(team._id.toString(), socket);
             resolve(team._id);
           }).catch((response: LoginResponse | Error) => {
             if ((response as any).stack !== undefined) {

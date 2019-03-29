@@ -46,6 +46,10 @@ export class TeamDao {
     return await TeamDao.addScore(await Team.findById(id).populate('division').exec());
   }
 
+  static async getTeams(): Promise<TeamType[]> {
+    return await TeamDao.addScores(await Team.find().populate('division').exec());
+  }
+
   static async getTeamsForDivision(divisionId: string): Promise<TeamModel[]> {
     return await TeamDao.addScores(await Team.find({division: {_id: divisionId}}).populate('division').exec());
   }

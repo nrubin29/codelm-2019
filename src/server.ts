@@ -10,6 +10,14 @@ import { VERSION } from '../../common/version';
 import './daos/dao';
 import apiRoutes from './routes/route';
 
+process.on('uncaughtException', (e: Error) => {
+  console.error(e);
+});
+
+process.on('unhandledRejection', (reason: object) => {
+  console.error(reason);
+});
+
 const app = express();
 app.set('trust proxy', true);
 const expressWs = require('express-ws')(app);

@@ -9,6 +9,8 @@ import {ModelPopulateOptions} from 'mongoose';
 import {SocketManager} from '../socket.manager';
 import {UpdateTeamPacket} from '../../../common/src/packets/update.team.packet';
 import {ProblemUtil} from '../../../common/src/utils/problem.util';
+import {TeamModel} from "../../../common/src/models/team.model";
+import {TeamDao} from "./team.dao";
 
 type SubmissionType = SubmissionModel & mongoose.Document;
 
@@ -158,8 +160,28 @@ export class SubmissionDao {
   }
 
   static async getSubmissionsGrouped(): Promise<any> { // {'team.division': {_id: divisionId}}
-    const submissions: SubmissionModel[] = (await Submission.find().populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec()).map(submission => submission.toObject());
     const result = {};
+    const teams: TeamModel[] = (await TeamDao.getTeams()).map(submission => submission.toObject());
+
+    for (let team of teams) {
+      if (!team.division) {
+        console.error('Bad/stale team: ' + team._id);
+        continue;
+      }
+
+      const divisionId = team.division._id;
+      const teamId = team._id;
+
+      if (!(divisionId in result)) {
+        result[divisionId] = {[teamId]: {}};
+      }
+
+      else {
+        result[divisionId][teamId] = {};
+      }
+    }
+
+    const submissions: SubmissionModel[] = (await Submission.find().populate(SubmissionDao.problemPopulationPath).populate(SubmissionDao.teamPopulationPath).exec()).map(submission => submission.toObject());
 
     for (let submission of submissions) {
       if (!submission.team || !submission.problem) {
@@ -171,15 +193,7 @@ export class SubmissionDao {
       const teamId = submission.team._id;
       const problemId = submission.problem._id;
 
-      if (!(divisionId in result)) {
-        result[divisionId] = {[teamId]: {[problemId]: [submission]}};
-      }
-
-      else if (!(teamId in result[divisionId])) {
-        result[divisionId][teamId] = {[problemId]: [submission]};
-      }
-
-      else if (!(problemId in result[divisionId][teamId])) {
+      if (!(problemId in result[divisionId][teamId])) {
         result[divisionId][teamId][problemId] = [submission];
       }
 

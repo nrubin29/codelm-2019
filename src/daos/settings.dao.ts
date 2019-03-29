@@ -1,9 +1,9 @@
 import mongoose = require('mongoose');
-import { defaultSettingsModel, SettingsModel, SettingsState } from '../../../common/src/models/settings.model';
-import { Job, scheduleJob } from 'node-schedule';
-import { SocketManager } from '../socket.manager';
-import { UpdateSettingsPacket } from '../../../common/src/packets/update.settings.packet';
-import { StateSwitchPacket } from '../../../common/src/packets/state.switch.packet';
+import {defaultSettingsModel, SettingsModel, SettingsState} from '../../../common/src/models/settings.model';
+import {Job, scheduleJob} from 'node-schedule';
+import {SocketManager} from '../socket.manager';
+import {UpdateSettingsPacket} from '../../../common/src/packets/update.settings.packet';
+import {StateSwitchPacket} from '../../../common/src/packets/state.switch.packet';
 
 type SettingsType = SettingsModel & mongoose.Document;
 
@@ -47,6 +47,10 @@ export class SettingsDao {
       SocketManager.instance.emitToAll(new StateSwitchPacket(newSettings.state));
     }
 
+    if (newSettings.state === SettingsState.Closed || newSettings.state === SettingsState.End) {
+      SocketManager.instance.kickTeams();
+    }
+
     return newSettings;
   }
 
@@ -65,6 +69,10 @@ export class SettingsDao {
       const job = scheduleJob(schedule.when, function (newState: SettingsState) {
         Settings.updateOne({}, {$set: {state: newState}}).exec().then(() => {
           SocketManager.instance.emitToAll(new StateSwitchPacket(newState));
+
+          if (newState === SettingsState.Closed || newState === SettingsState.End) {
+            SocketManager.instance.kickTeams();
+          }
         });
       }.bind(null, schedule.newState));
 
