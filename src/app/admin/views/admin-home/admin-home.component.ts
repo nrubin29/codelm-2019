@@ -14,7 +14,6 @@ export class AdminHomeComponent implements OnInit {
   divisions: DivisionModel[] = [];
   groupedSubmissions: object;
 
-  // TODO: Refresh data every so often
   // TODO: Add an "overall" tab (for easy filtering)
   // TODO: Show loading indicator while data is being loaded
 
@@ -26,8 +25,13 @@ export class AdminHomeComponent implements OnInit {
 
       this.submissionService.getSubmissionsGrouped().then(groupedSubmissions => {
         this.groupedSubmissions = groupedSubmissions;
-        console.log(groupedSubmissions)
       });
     });
+
+    setInterval(() => {
+      this.submissionService.getSubmissionsGrouped().then(groupedSubmissions => {
+        this.groupedSubmissions = groupedSubmissions;
+      });
+    }, 30 * 1000);
   }
 }

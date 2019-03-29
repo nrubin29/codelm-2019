@@ -29,17 +29,16 @@ export class LeaderboardComponent implements OnInit {
   constructor(private teamService: TeamService, private problemService: ProblemService, private submissionService: SubmissionService, private dialog: MatDialog) { }
 
   ngOnInit() {
-    console.log(this.groupedSubmissions);
     this.teamService.getTeamsForDivision(this.division._id).then(teams => this.teams = teams.sort(((a, b) => b.score - a.score)));
     this.problemService.getProblems(this.division._id).then(problems => this.problems = problems);
   }
 
   get columns() {
-    return ['team', 'members', 'score'].concat(...this.problems.map(problem => problem._id));
+    return ['team', /*'members',*/ 'score'].concat(...this.problems.map(problem => problem._id));
   }
 
   get tableData() {
-    return this.teams.filter(team => team._id in this.groupedSubmissions).map(team => Object.assign({team}, ...Object.keys(this.groupedSubmissions[team._id]).map(problemId => ({[problemId]: this.groupedSubmissions[team._id][problemId]}))));
+    return this.teams.filter(team => team._id in this.groupedSubmissions).map(team => Object.assign({team: Object.assign(team, {username: team.username.replace(/Junior|Senior|Upper/g, '')})}, ...Object.keys(this.groupedSubmissions[team._id]).map(problemId => ({[problemId]: this.groupedSubmissions[team._id][problemId]}))));
   }
 
   status(submissions: SubmissionModel[]) {

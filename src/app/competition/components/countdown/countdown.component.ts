@@ -1,11 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import * as moment from 'moment';
 import { Moment } from 'moment';
-import { Router } from '@angular/router';
 import { SettingsService } from '../../../services/settings.service';
 import { SocketService } from '../../../services/socket.service';
-import { SettingsModel, SettingsState } from '../../../../../../common/src/models/settings.model';
-import {StateSwitchPacket} from '../../../../../../common/src/packets/state.switch.packet';
+import { SettingsModel } from '../../../../../../common/src/models/settings.model';
 
 @Component({
   selector: 'app-countdown',
@@ -19,7 +17,7 @@ export class CountdownComponent implements OnInit {
   end: Moment;
   countdown: string;
 
-  constructor(private socketService: SocketService, private settingsService: SettingsService, private router: Router) { }
+  constructor(private socketService: SocketService, private settingsService: SettingsService) { }
 
   ngOnInit() {
     this.socketService.on('updateSettings', () => {
@@ -27,17 +25,6 @@ export class CountdownComponent implements OnInit {
         this.settings = settings;
         this.setup();
       });
-    });
-
-    this.socketService.on<StateSwitchPacket>('stateSwitch', packet => {
-      switch (packet.newState) {
-        case SettingsState.End:
-          this.router.navigate(['/end']);
-          break;
-        case SettingsState.Closed:
-          this.router.navigate(['/login']);
-          break;
-      }
     });
 
     this.settingsService.getSettings().then(settings => {

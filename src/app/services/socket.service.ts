@@ -44,8 +44,14 @@ export class SocketService {
     this.eventsOnce[event] = [];
   }
 
+  offAll() {
+    this.events = new Map<string, ((Packet) => void)[]>();
+    this.eventsOnce = new Map<string, ((Packet) => void)[]>();
+  }
+
   listenOnDisconnect() {
     this.socket.onclose = () => {
+      this.offAll();
       this.router.navigate(['/disconnected']);
     };
   }

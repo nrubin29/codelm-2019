@@ -8,3 +8,4 @@
     <app-leaderboard [division]="division" [groupedSubmissions]="groupedSubmissions[division._id]"></app-leaderboard>
   </mat-tab>
 </mat-tab-group>
+<p *ngIf="!groupedSubmissions">Loading...</p>

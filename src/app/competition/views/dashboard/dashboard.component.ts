@@ -8,6 +8,9 @@ import { SocketService } from '../../../services/socket.service';
 import { SubmissionUtil } from '../../../../../../common/src/utils/submission.util';
 import { SubmissionModel } from '../../../../../../common/src/models/submission.model';
 import { SubmissionService } from '../../../services/submission.service';
+import {StateSwitchPacket} from "../../../../../../common/src/packets/state.switch.packet";
+import {SettingsState} from "../../../../../../common/src/models/settings.model";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-dashboard',
@@ -21,7 +24,7 @@ export class DashboardComponent implements OnInit {
 
   @ViewChild(MatSidenav) private sideNav: MatSidenav;
 
-  constructor(private problemService: ProblemService, private teamService: TeamService, private submissionService: SubmissionService, private socketService: SocketService) { }
+  constructor(private problemService: ProblemService, private teamService: TeamService, private submissionService: SubmissionService, private socketService: SocketService, private router: Router) { }
 
   ngOnInit() {
     this.socketService.on('updateTeam', () => this.teamService.refreshTeam());
@@ -36,6 +39,19 @@ export class DashboardComponent implements OnInit {
           this.problems = problems;
         });
       });
+    });
+
+    this.socketService.on<StateSwitchPacket>('stateSwitch', packet => {
+      switch (packet.newState) {
+        case SettingsState.End:
+          this.socketService.offAll();
+          this.router.navigate(['/end']);
+          break;
+        case SettingsState.Closed:
+          this.socketService.offAll();
+          this.router.navigate(['/login']);
+          break;
+      }
     });
   }
 

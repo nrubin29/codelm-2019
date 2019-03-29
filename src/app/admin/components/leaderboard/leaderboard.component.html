@@ -3,10 +3,10 @@
     <mat-header-cell *matHeaderCellDef>Team</mat-header-cell>
     <mat-cell *matCellDef="let element"><a [routerLink]="['team', element.team._id]">{{element.team.username}}</a></mat-cell>
   </ng-container>
-  <ng-container matColumnDef="members">
-    <mat-header-cell *matHeaderCellDef>Members</mat-header-cell>
-    <mat-cell *matCellDef="let element">{{element.team.members}}</mat-cell>
-  </ng-container>
+<!--  <ng-container matColumnDef="members">-->
+<!--    <mat-header-cell *matHeaderCellDef>Members</mat-header-cell>-->
+<!--    <mat-cell *matCellDef="let element">{{element.team.members}}</mat-cell>-->
+<!--  </ng-container>-->
   <ng-container matColumnDef="score">
     <mat-header-cell *matHeaderCellDef>Score</mat-header-cell>
     <mat-cell *matCellDef="let element">{{element.team.score}}</mat-cell>
