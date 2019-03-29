@@ -114,7 +114,7 @@ export class Timesweeper implements Game {
   onInput(data: string): string | GameResult {
     this.guesses++;
 
-    const split = data.split(' ').map(x => parseInt(x));
+    const split = data.split(' ').filter(x => x.length > 0).map(x => parseInt(x));
 
     if (split.findIndex(isNaN) !== -1) {
       return {error: 'invalid guess'};
@@ -127,6 +127,10 @@ export class Timesweeper implements Game {
         return {error: 'invalid guess'};
       }
 
+      else if (split.findIndex(x => x < 0 || x > 9) !== -1) {
+          return {error: 'invalid guess'};
+      }
+
       const row = split[0], col = split[1];
       this.uncover(row, col);
       res = this.playerBoard.map(r => r.join(' ')).join(' ');
@@ -135,6 +139,10 @@ export class Timesweeper implements Game {
     else if (this.extras.outputType === TimesweeperOutputType.GuessResult) {
       if (split.length !== 1) {
         return {error: 'invalid guess'};
+      }
+
+      else if (split[0] < 0 || split[0] > 24) {
+          return {error: 'invalid guess'};
       }
 
       const row = Math.floor(split[0] / this.extras.boardSize), col = split[0] % this.extras.boardSize;
