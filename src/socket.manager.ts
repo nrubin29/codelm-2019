@@ -30,8 +30,8 @@ import {SubmissionExtrasPacket} from "../../common/src/packets/submission.extras
 export class SocketManager {
   private static _instance: SocketManager;
 
-  private teamSockets: Map<string, WebSocket>;
-  private adminSockets: Map<string, WebSocket>;
+  teamSockets: Map<string, WebSocket>;
+  adminSockets: Map<string, WebSocket>;
 
   static get instance(): SocketManager {
     if (!SocketManager._instance) {
@@ -56,12 +56,30 @@ export class SocketManager {
   }
 
   public emitToSocket(packet: Packet, socket: WebSocket) {
-    socket.send(JSON.stringify(packet));
+    if (socket.readyState !== WebSocket.OPEN) {
+      console.error('Bad socket');
+    }
+
+    else {
+      socket.send(JSON.stringify(packet));
+    }
   }
 
   public emitToAll(packet: Packet) {
     this.teamSockets.forEach(socket => this.emitToSocket(packet, socket));
     this.adminSockets.forEach(socket => this.emitToSocket(packet, socket));
+  }
+
+  public kick(id: string) {
+    if (this.teamSockets.has(id)) {
+      this.teamSockets.get(id).close();
+      this.teamSockets.delete(id);
+    }
+
+    if (this.adminSockets.has(id)) {
+      this.adminSockets.get(id).close();
+      this.adminSockets.delete(id);
+    }
   }
 
   public kickTeams() {
@@ -75,8 +93,25 @@ export class SocketManager {
 
     setInterval(() => {
       // This is apparently necessary to stop the random disconnecting.
-      this.teamSockets.forEach(socket => socket.ping());
-      this.adminSockets.forEach(socket => socket.ping());
+      this.teamSockets.forEach((socket, id) => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.ping();
+        }
+
+        else {
+          this.teamSockets.delete(id);
+        }
+      });
+
+      this.adminSockets.forEach((socket, id) => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.ping();
+        }
+
+        else {
+          this.adminSockets.delete(id);
+        }
+      });
     }, 15 * 1000);
 
     (app as any as WithWebsocketMethod).ws('/', socket => {
@@ -100,7 +135,11 @@ export class SocketManager {
       socket.on('submission', packet => this.onSubmissionPacket(packet as SubmissionPacket, socket).catch(() => {}));
       socket.on('replay', packet => this.onReplayPacket(packet as ReplayPacket, socket).catch(() => {}));
 
-      socket.onclose = () => {
+      socket.onclose = event => {
+        if (!event.wasClean) {
+          console.error(_id, event.code, event.reason);
+        }
+
         if (_id) {
           this.teamSockets.delete(_id);
           this.adminSockets.delete(_id);
@@ -314,7 +353,7 @@ export class SocketManager {
           }
 
           const obj = JSON.parse(packet.trim());
-          console.log(obj);
+          // console.log(obj);
 
           if (obj.hasOwnProperty('error')) {
             errors.push(obj['error']);

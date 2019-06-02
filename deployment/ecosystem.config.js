@@ -7,7 +7,6 @@ module.exports = {
     {
       name      : 'codelm',
       script    : 'dist/bundle.js',
-      watch     : true,
       env: {
       },
       env_production : {
