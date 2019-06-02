@@ -161,7 +161,7 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
             }
           }
         }
-      }, 500);
+      }, 750);
 
       if (this.problemService.peekProblemSubmission) {
         this.socketService.emit(new SubmissionPacket(this.problemService.problemSubmission, this.teamService.team.getValue(), VERSION));

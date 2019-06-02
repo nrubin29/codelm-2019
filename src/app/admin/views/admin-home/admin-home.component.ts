@@ -32,6 +32,6 @@ export class AdminHomeComponent implements OnInit {
       this.submissionService.getSubmissionsGrouped().then(groupedSubmissions => {
         this.groupedSubmissions = groupedSubmissions;
       });
-    }, 30 * 1000);
+    }, 120 * 1000);
   }
 }

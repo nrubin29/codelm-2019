@@ -23,6 +23,7 @@ import { DivisionsResolve } from '../resolves/divisions.resolve';
 import {AdminsResolve} from "../resolves/admins.resolve";
 import {HighlowComponent} from "../common/views/highlow/highlow.component";
 import {TimesweeperComponent} from "../common/views/timesweeper/timesweeper.component";
+import {SocketsComponent} from "./views/sockets/sockets.component";
 
 const routes: Routes = [
   {
@@ -30,6 +31,7 @@ const routes: Routes = [
       [
         {path: '', component: AdminHomeComponent},
         {path: 'settings', component: SettingsComponent, canActivate: [SuperUserGuard], resolve: {settings: SettingsResolve}},
+        {path: 'sockets', component: SocketsComponent},
         {path: 'team/:id', component: TeamComponent, resolve: {team: TeamResolve, submissions: SubmissionsResolve}},
         {path: 'submission/:id', component: SubmissionComponent, resolve: {submission: SubmissionResolve}},
         {path: 'disputes', component: DisputesComponent, resolve: {disputes: DisputesResolve}},
