@@ -10,7 +10,7 @@ import { EditorConfiguration, EditorFromTextArea } from 'codemirror';
   styleUrls: ['./code-mirror.component.scss']
 })
 export class CodeMirrorComponent implements AfterViewInit {
-  @ViewChild('host') host: ElementRef;
+  @ViewChild('host', {static: false}) host: ElementRef;
   @Input() config: EditorConfiguration;
   @Output() instance: EditorFromTextArea;
   @Output() change = new EventEmitter<string>();

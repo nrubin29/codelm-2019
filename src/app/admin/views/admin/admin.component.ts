@@ -11,7 +11,7 @@ import {MatDrawerToggleResult, MatSidenav} from "@angular/material";
 export class AdminComponent implements OnInit {
   admin: AdminModel;
 
-  @ViewChild(MatSidenav) private sideNav: MatSidenav;
+  @ViewChild(MatSidenav, {static: false}) private sideNav: MatSidenav;
 
   constructor(private adminService: AdminService) { }
 

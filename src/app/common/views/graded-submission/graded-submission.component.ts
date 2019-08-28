@@ -14,7 +14,7 @@ export class GradedSubmissionComponent implements OnInit {
   @Input() submission: GradedSubmissionModel;
 
   mode: string;
-  @ViewChild(CodeMirrorComponent) codeMirror: CodeMirrorComponent;
+  @ViewChild(CodeMirrorComponent, {static: true}) codeMirror: CodeMirrorComponent;
 
   disputeMessage: string;
 

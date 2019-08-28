@@ -12,7 +12,7 @@ import { SettingsModel } from '../../../../../../common/src/models/settings.mode
 })
 export class CountdownComponent implements OnInit {
   private settings: SettingsModel;
-  private interval: NodeJS.Timer;
+  private interval: number;
 
   end: Moment;
   countdown: string;

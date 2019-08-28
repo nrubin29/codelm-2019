@@ -38,9 +38,9 @@ export class TimesweeperComponent implements OnInit, AfterViewInit {
   score: number;
   _id: string;
 
-  @ViewChild('htmlLog') htmlLog: ElementRef<HTMLDivElement>;
-  @ViewChild(MatTable) table: MatTable<object>;
-  @ViewChild('board') board: ElementRef<HTMLCanvasElement>;
+  @ViewChild('htmlLog', {static: true}) htmlLog: ElementRef<HTMLDivElement>;
+  @ViewChild(MatTable, {static: true}) table: MatTable<object>;
+  @ViewChild('board', {static: true}) board: ElementRef<HTMLCanvasElement>;
   @ViewChildren('img') images: QueryList<ElementRef<HTMLImageElement>>;
 
   extras: TimesweeperExtras;

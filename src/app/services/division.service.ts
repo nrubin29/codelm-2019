@@ -19,7 +19,7 @@ export class DivisionService {
 
     for (let starterCode of division.starterCode) {
       if (starterCode.file && typeof starterCode.file === 'object') {
-        formData.append(starterCode.state.toString(), starterCode.file as any as File, (starterCode.file as any as File).name);
+        formData.append(starterCode.state.toString(), starterCode.file as File, (starterCode.file as File).name);
       }
     }
 

@@ -22,7 +22,7 @@ export class DashboardComponent implements OnInit {
   private submissions: SubmissionModel[];
   problems: ProblemModel[] = [];
 
-  @ViewChild(MatSidenav) private sideNav: MatSidenav;
+  @ViewChild(MatSidenav, {static: false}) private sideNav: MatSidenav;
 
   constructor(private problemService: ProblemService, private teamService: TeamService, private submissionService: SubmissionService, private socketService: SocketService, private router: Router) { }
 

@@ -18,7 +18,7 @@ export class UploadSubmissionComponent implements OnInit {
   score: number;
 
   mode: string;
-  @ViewChild(CodeMirrorComponent) codeMirror: CodeMirrorComponent;
+  @ViewChild(CodeMirrorComponent, {static: true}) codeMirror: CodeMirrorComponent;
 
   constructor(private submissionComponent: SubmissionComponent, private submissionService: SubmissionService, private problemService: ProblemService, private codeSaverService: CodeSaverService, private router: Router) {
   }

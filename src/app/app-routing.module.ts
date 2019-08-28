@@ -13,8 +13,8 @@ import { OpenRegistrationGuard } from './guards/open-registration.guard';
 
 const routes: Routes = [
   {path: '', redirectTo: '/login', pathMatch: 'full'},
-  {path: 'admin', loadChildren: 'app/admin/admin.module#AdminModule'},
-  {path: 'dashboard', loadChildren: 'app/competition/competition.module#CompetitionModule'},
+  {path: 'admin', loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule)},
+  {path: 'dashboard', loadChildren: () => import('./competition/competition.module').then(m => m.CompetitionModule)},
   {path: 'login', component: LoginComponent, canActivate: [EndGuard], resolve: {settings: SettingsResolve}},
   {path: 'register', component: RegisterComponent, canActivate: [EndGuard, OpenRegistrationGuard], resolve: {divisions: DivisionsResolve}},
   {path: 'disconnected', component: DisconnectedComponent, canActivate: [DisconnectGuard, EndGuard]},

@@ -27,8 +27,8 @@ export class HighlowComponent implements AfterViewInit {
   score: number;
   _id: string;
 
-  @ViewChild('htmlLog') htmlLog: ElementRef<HTMLDivElement>;
-  @ViewChild(MatTable) table: MatTable<object>;
+  @ViewChild('htmlLog', {static: true}) htmlLog: ElementRef<HTMLDivElement>;
+  @ViewChild(MatTable, {static: true}) table: MatTable<object>;
 
   constructor(@Optional() private dashboardComponent: DashboardComponent, @Optional() private adminComponent: AdminComponent, private problemService: ProblemService, private teamService: TeamService, private socketService: SocketService) { }
 
