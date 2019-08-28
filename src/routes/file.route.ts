@@ -13,7 +13,7 @@ router.get('/startercode/:division', async (req: Request, res: Response) => {
   if (starterCode) {
     res.set('Content-Type', 'application/zip');
     res.set('Content-Disposition', 'attachment; filename=startercode.zip');
-    res.set('Content-Length', starterCode.file.length.toString());
+    res.set('Content-Length', (starterCode.file as Buffer).length.toString());
     res.end(starterCode.file, 'binary');
   }
 
