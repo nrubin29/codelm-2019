@@ -8,7 +8,7 @@ export enum DivisionType {
 
 export interface StarterCode {
   state: SettingsState;
-  file: Buffer;
+  file: Buffer|File; // Buffer when it's in the database, File when it's being uploaded from the frontend.
 }
 
 export interface DivisionModel {
